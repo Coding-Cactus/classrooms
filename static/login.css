@@ -1,0 +1,23 @@
+h1 {
+	font-size: 70px;
+	text-align: center;
+}
+
+.replit-auth-button {
+    padding: var(--spacing-3);
+    font-size: 50px;
+    border-radius: 25px;
+    line-height: 50px;
+	position: fixed;
+	top: 50%;
+	left: calc(50% - 213.985px);
+}
+
+@media screen and (max-width: 500px) {
+	.replit-auth-button {
+		width: 90vw;
+		font-size: 10vw;
+		left: calc(50% - 45vw);
+		padding: var(--spacing-1);
+	}
+}

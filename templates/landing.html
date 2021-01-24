@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link href="static/landing.css" rel="stylesheet" type="text/css" />
+<link href="static/form.css" rel="stylesheet" type="text/css" />
+{% endblock %}
+
+
+{% block main %}
+{% if teacher %}
+	<h2>Create a Classroom</h2>
+	<button id="make-class">Create</button>
+	<div id="make-class-popup"></div>
+	<script src="static/make_class.js"></script>
+{% endif %}
+
+<h2>Join a Classroom</h2>
+<form method="POST" action="/join">
+	<input type="text" name="invite_code" id="invite_code" placeholder="Enter code" required>
+	<button id="invite_code_submit" type="submit" disabled>Join</button>
+	<script>
+		document.getElementById("invite_code").addEventListener("keyup", () => {
+			if (document.getElementById("invite_code").value.length === 10) {
+				document.getElementById("invite_code_submit").disabled = false;
+			} else {
+				document.getElementById("invite_code_submit").disabled = true;
+			}
+		});
+	</script>
+</form>
+
+<h2>Your Classrooms</h2>
+<div id="class-list">
+	{% for class in userClassrooms %}
+	<div class="card">
+		<a class="link-blanket" href="/classroom/{{class}}"></a>
+		<img class="image" src="{{allClassrooms[class]['classroom_pfp_url']}}">
+		<div class="content">
+			<div class="v-stack">
+				<h1 class="heading">{{allClassrooms[class]["name"]}}</h1>
+				<div class="h-stack">
+					<a href="https://repl.it/@{{users[allClassrooms[class]['owner_id']]['username']}}"<img class="pfp" style="background-image:url({{users[allClassrooms[class]['owner_id']]['pfp']}})"></a>
+					<a class="username" href="https://repl.it/@{{users[allClassrooms[class]['owner_id']]['username']}}">{{users[allClassrooms[class]['owner_id']]['username']}}</a>
+				</div>
+				<div class="text" style="max-height: 50px;">{{allClassrooms[class]["description"]}}</div>
+				<div class="language">
+					<div class="h-stack">
+						<div class="lang-icon-wrapper">
+							<img class="lang-icon" src="{{langs[allClassrooms[class]['language']]['img']}}">
+						</div>
+						<span class="text">{{langs[allClassrooms[class]['language']]['name']}}</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	{% endfor %}
+</div>
+
+{% endblock %}

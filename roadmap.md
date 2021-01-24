@@ -1,0 +1,22 @@
+# Roadmap
+
+- [x] repl auth log in
+- [x] landing page
+  - [x] list all classes
+  - [x] create new class (teachers only)
+- [ ] edit classroom
+  - [ ] edit name, description, image
+  - [ ] add students
+    - [ ] add indivdually
+    - [ ] create invite link
+    - [ ] create code
+  - [ ] add teachers
+    - [ ] add indivdually
+    - [ ] create invite link
+    - [ ] create code
+- [ ] join class with code
+- [ ] create assignments
+- [ ] view list of assignments
+- [ ] embed repls in assignments
+- [ ] submit assignments
+- [ ] teacher stuff like marking and feedback

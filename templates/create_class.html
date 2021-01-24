@@ -1,0 +1,54 @@
+<div class="cover">
+	<div class="content-container">
+		<div class="new-classroom">
+			<div class="content">
+				<h1>Create a Classroom</h1>
+				<form method="POST" id="make-class-form" action="/createclass" enctype="multipart/form-data">
+					<div class="inputs">
+						<div class="input-wrapper">
+							<div class="input">
+								<input autocomplete="off" type="text" name="name" id="name" placeholder="Name" required>
+							</div>
+						</div>
+						<div class="input-wrapper">
+							<div class="language-selector">
+								<div class="input">
+									<div class="drop-wrap">
+										<input autocomplete="off" type="text" name="language" id="language-select" placeholder="Language" required>
+										<ul class="dropdown" id="langs">
+											{% for lang in langs %}
+												<li data-langname="{{langs[lang]['name']}}"><img alt="{{langs[lang]['name']}}" src="{{langs[lang]['img']}}"><span class="text">{{langs[lang]['name']}}</span></li>
+											{% endfor %}
+										</ul>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="desc-input">
+						<textarea autocomplete="off" name="description" id="description" placeholder="Description (optional)"></textarea>
+					</div>
+					<div class="v-stack">
+						<div class="image-output-wrapper">
+							<img class="image-output" id="image-output" src="static/repl_logo.png">
+						</div>
+						<div class="image-input">
+							<input type="file" name="classroom-pfp" id="classroom-pfp" accept="image/*">
+						</div>
+					</div>
+					<div id="create-class-response" class="error"></div>
+					<button id="cancel">Cancel</button>
+					<button type="submit" id="submit" disabled>Create Classroom</button>
+				</form>
+			</div>
+		</div>
+		<div class="close-wrapper">
+			<button class="close" id="close">
+				<svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1" fill="currentColor" style="vertical-align: middle;">
+					<path d="M18 6L6 18" stroke-width="3" stroke-linejoin="round"></path>
+					<path d="M6 6L18 18" stroke-width="3" stroke-linejoin="round"></path>
+				</svg>
+			</button>
+		</div>
+	</div>
+</div>
