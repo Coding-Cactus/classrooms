@@ -1,4 +1,4 @@
-# classrooms
+# classrooms [WIP]
 
 With repl.it's Classrooms feature being disabled on the 31st Jan 2021, schools are now required to pay $1000 dollars a year for something which they used to use for free!
 
