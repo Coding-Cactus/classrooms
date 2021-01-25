@@ -24,9 +24,9 @@ client = repltalk.Client()
 db = DB("db", os.getenv("dbToken"))
 
 cloudinary.config(
-    cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
-    api_key = os.getenv("CLOUDINARY_API_KEY"),
-    api_secret = os.getenv("CLOUDINARY_API_SECRET")
+	cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
+	api_key = os.getenv("CLOUDINARY_API_KEY"),
+	api_secret = os.getenv("CLOUDINARY_API_SECRET")
 )
 
 app = Flask(__name__)
@@ -88,6 +88,9 @@ def make_class():
 	user = (asyncio.run(client.get_user(user)))
 	user_id = str(user.id)
 	user_username = user.name
+	teacher = "teacher" in util.parse_roles(user.roles)
+
+	if not teacher: return abort(404)
 
 
 	if len(name.replace(" ", "")) == 0 or not name:
@@ -126,6 +129,10 @@ def make_class():
 		"teachers": [user_id],
 		"students": [],
 		"assignments": [],
+		"studentInviteLink": None,
+		"studentInviteCode": None,
+		"teacherInviteLink": None,
+		"teacherInviteCode": None
 	}
 	db["users"][user_id]["classrooms"].append(classroom_id)
 	db.save()
@@ -135,23 +142,144 @@ def make_class():
 
 @app.route("/classroom/<id>")
 def get_classroom(id):
+	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
 	user_id = str(user.id)
 
 	if id in db["users"][user_id]["classrooms"]:
-		return render_template("classroom.html", classroom=db["classrooms"][id])
+		return render_template("classroom.html", classroom=db["classrooms"][id], users=db["users"])
 	return abort(404)
 
 
 @app.route("/classroom/<id>/teachers")
 def classroom_settings(id):
+	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
 	user_id = str(user.id)
 
 	if id in db["users"][user_id]["classrooms"] and user_id in db["classrooms"][id]["teachers"]:
-		return render_template("teachers.html", classroom=db["classrooms"][id])
+		return render_template("teachers.html", classroom=db["classrooms"][id], classroomId=id, users=db["users"])
 	return abort(404)
 
+
+@app.route("/getaddstudentsform", methods=["POST"])
+def getaddstudentsform():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	class_id = request.form.get("classId", None)
+
+	if not class_id: return abort(404)
+	if user_id not in db["classrooms"][class_id]["teachers"]: return abort(404)
+
+	if not db["classrooms"][class_id]["studentInviteLink"]:
+		inviteLink = util.randomstr(15)
+		while inviteLink in db["studentInviteLinks"] or inviteLink in db["teacherInviteLinks"]:
+			inviteLink = util.randomstr(15)
+		db["classrooms"][class_id]["studentInviteLink"] = inviteLink
+		db["studentInviteLinks"][inviteLink] = class_id
+		db.save()
+	else:
+		inviteLink = db["classrooms"][class_id]["studentInviteLink"]
+
+	if not db["classrooms"][class_id]["studentInviteCode"]:
+		inviteCode = util.randomstr(10)
+		while inviteCode in db["studentInviteCodes"]:
+			inviteCode = util.randomstr(10)
+		db["classrooms"][class_id]["studentInviteCode"] = inviteCode
+		db["studentInviteCodes"][inviteCode] = class_id
+		db.save()
+	else:
+		inviteCode = db["classrooms"][class_id]["studentInviteCode"]
+
+	return render_template("add_people.html", type="student", inviteLink=inviteLink, inviteCode=inviteCode)
+
+
+@app.route("/getaddteachersform", methods=["POST"])
+def getaddteachersform():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	class_id = request.form.get("classId", None)
+
+	if not class_id: return abort(404)
+	if class_id not in db["classrooms"]: return abort(404)
+	if user_id not in db["classrooms"][class_id]["teachers"]: return abort(404)
+
+	if not db["classrooms"][class_id]["teacherInviteLink"]:
+		inviteLink = util.randomstr(15)
+		while inviteLink in db["teacherInviteLinks"] or inviteLink in db["studentInviteLinks"]:
+			inviteLink = util.randomstr(15)
+		db["classrooms"][class_id]["teacherInviteLink"] = inviteLink
+		db["teacherInviteLinks"][inviteLink] = class_id
+		db.save()
+	else:
+		inviteLink = db["classrooms"][class_id]["teacherInviteLink"]
+
+	if not db["classrooms"][class_id]["teacherInviteCode"]:
+		inviteCode = util.randomstr(10)
+		while inviteCode in db["teacherInviteCodes"]:
+			inviteCode = util.randomstr(10)
+		db["classrooms"][class_id]["teacherInviteCode"] = inviteCode
+		db["teacherInviteCodes"][inviteCode] = class_id
+		db.save()
+	else:
+		inviteCode = db["classrooms"][class_id]["teacherInviteCode"]
+
+	return render_template("add_people.html", type="teacher", inviteLink=inviteLink, inviteCode=inviteCode)
+
+
+
+@app.route("/invite/<inviteLink>")
+def invite(inviteLink):
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+
+	if inviteLink in db["studentInviteLinks"]:
+		class_id = db["studentInviteLinks"][inviteLink]
+		if user_id not in db["classrooms"][class_id]["students"]:
+			db["classrooms"][class_id]["students"].append(user_id)
+			db["users"][user_id]["classrooms"].append(class_id)
+			db.save()
+		return redirect(f"/classroom/{class_id}")
+
+	if inviteLink in db["teacherInviteLinks"] and "teacher" in util.parse_roles(user.roles):
+		class_id = db["teacherInviteLinks"][inviteLink]
+		if user_id not in db["classrooms"][class_id]["teachers"]:
+			db["classrooms"][class_id]["teachers"].append(user_id)
+			db["users"][user_id]["classrooms"].append(class_id)
+			db.save()
+		return redirect(f"/classrooms/{class_id}/teachers")
+
+	return abort(404)
+
+
+@app.route("/join", methods=["POST"])
+def join():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+
+	inviteCode = request.form.get("invite_code", None)
+
+	if inviteCode in db["studentInviteCodes"]:
+		class_id = db["studentInviteCodes"][inviteCode]
+		if user_id not in db["classrooms"][class_id]["students"]:
+			db["classrooms"][class_id]["students"].append(user_id)
+			db["users"][user_id]["classrooms"].append(class_id)
+			db.save()
+		return redirect(f"/classroom/{class_id}")
+
+	if inviteCode in db["teacherInviteCodes"] and "teacher" in util.parse_roles(user.roles):
+		class_id = db["teacherInviteCodes"][inviteCode]
+		if user_id not in db["classrooms"][class_id]["teachers"]:
+			db["classrooms"][class_id]["teachers"].append(user_id)
+			db["users"][user_id]["classrooms"].append(class_id)
+			db.save()
+		return redirect(f"/classrooms/{class_id}/teachers")
+
+	return "Invalid Code"
 
 
 

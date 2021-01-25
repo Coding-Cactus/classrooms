@@ -1,0 +1,19 @@
+header h2 {
+	width: 100%;
+	background-color: var(--color-background-3);
+	text-align: center;
+	color: var(--foreground-1);
+	font-weight: var(--font-weight-light);
+}
+
+h2 {
+	padding: var(--spacing-1) 0;
+}
+
+.content h3 {
+	margin-top: var(--spacing-3);
+}
+
+#invite-username, #invite-link, #invite-code {
+	margin: var(--spacing-1);
+}

@@ -5,18 +5,19 @@
   - [x] list all classes
   - [x] create new class (teachers only)
 - [ ] edit classroom
-  - [ ] edit name, description, image
   - [ ] add students
     - [ ] add indivdually
-    - [ ] create invite link
-    - [ ] create code
+    - [x] create invite link
+    - [x] create code
   - [ ] add teachers
     - [ ] add indivdually
     - [ ] create invite link
     - [ ] create code
+  - [ ] edit name, description, image
 - [ ] join class with code
 - [ ] create assignments
 - [ ] view list of assignments
 - [ ] embed repls in assignments
 - [ ] submit assignments
 - [ ] teacher stuff like marking and feedback
+- [ ] classroom templates

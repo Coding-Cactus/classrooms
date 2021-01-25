@@ -1,1 +1,33 @@
-{% extends "base.html" %}
+{% extends "classroom_base.html" %}
+
+{% block main %}
+
+
+<h2>Students</h2>
+<button id="invite-students-button">Invite More</button>
+<div id="classroomId" style="display: none;">{{classroomId}}</div>
+<div id="add-students-popup"></div>
+
+<ul>
+	{% for student in classroom["students"] %}
+		<li><a href="https://repl.it/@{{users[student]['username']}}">{{users[student]['username']}}</a></li>
+	{% endfor %}
+</ul>
+
+
+
+<h2>Teachers</h2>
+<button id="invite-teachers-button">Invite More</button>
+<div id="add-teachers-popup"></div>
+
+<ul>
+	{% for teacher in classroom["teachers"] %}
+		<li><a href="https://repl.it/@{{users[teacher]['username']}}">{{users[teacher]['username']}}</a></li>
+	{% endfor %}
+</ul>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/add_people.js"></script>
+{% endblock %}

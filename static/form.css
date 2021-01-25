@@ -23,7 +23,7 @@
 	pointer-events: none;
 }
 
-.new-classroom .content {
+.content-wrapper .content {
 	position: relative;
 	background-color: var(--color-background-1);
 	border-radius: var(--border-radius-1);
@@ -33,7 +33,7 @@
 	pointer-events: all;
 }
 
-.new-classroom {
+.content-wrapper {
 	background-color: var(--color-background-1);
 	color: var(--color-foreground-1);
 	min-height: 350px;
@@ -121,23 +121,28 @@ input[type="file"]::before {
 	object-fit: cover;
 }
 
-#cancel {
+#cancel, .copy {
 	background-color: var(--color-control-3);
 	border: 1px solid var(--color-control-1);
 	color: var(--color-foreground-1);
 	margin-top: var(--spacing-1);
 }
 
-#cancel:hover {
-	background-color: var(--color-control-2);
-	color: var(--color-foreground-1);
+.copy {
+	margin-top: 0;
 }
 
-#cancel:active {
+#cancel:hover, .copy:hover {
+	background-color: var(--color-control-2);
+	color: var(--color-foreground-1);
+	border-color: var(--color-control-1);
+}
+
+#cancel:active, .copy:active {
 	background-color: var(--color-control-1);
 }
 
-#cancel:focus {
+#cancel:focus, .copy:focus {
 	outline-offset: 2px;
 	box-shadow: 0 0 0 3px var(--color-primary-transparent-1);
 }
@@ -159,7 +164,7 @@ input[type="file"]::before {
 	}
 }
 
-.close {
+.close{
 	cursor: pointer;
 	color: var(--color-foreground-3);
 	background-color: var(--color-background-1);
@@ -183,4 +188,5 @@ input[type="file"]::before {
 
 #submit {
 	margin-left: var(--spacing-1);
+	margin-top: var(--spacing-1);
 }

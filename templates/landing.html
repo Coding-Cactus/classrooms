@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
 {% block head %}
-<link href="static/landing.css" rel="stylesheet" type="text/css" />
-<link href="static/form.css" rel="stylesheet" type="text/css" />
+<link href="/static/landing.css" rel="stylesheet" type="text/css" />
+<link href="/static/form.css" rel="stylesheet" type="text/css" />
 {% endblock %}
 
 
@@ -11,13 +11,14 @@
 	<h2>Create a Classroom</h2>
 	<button id="make-class">Create</button>
 	<div id="make-class-popup"></div>
-	<script src="static/make_class.js"></script>
+	<script src="/static/make_class.js"></script>
 {% endif %}
 
 <h2>Join a Classroom</h2>
-<form method="POST" action="/join">
+<form method="POST" id="join-class-form" action="/join">
 	<input type="text" name="invite_code" id="invite_code" placeholder="Enter code" required>
 	<button id="invite_code_submit" type="submit" disabled>Join</button>
+	<div class="error" id="join-error"></div>
 	<script>
 		document.getElementById("invite_code").addEventListener("keyup", () => {
 			if (document.getElementById("invite_code").value.length === 10) {
@@ -25,6 +26,21 @@
 			} else {
 				document.getElementById("invite_code_submit").disabled = true;
 			}
+		});
+
+		document.getElementById("join-class-form").addEventListener("submit", (e) => {
+			let request = new XMLHttpRequest();
+			request.open("POST", "/join", true);
+			request.onload = function() {
+				response = request.responseText;
+				if (response.includes("Invalid")) {
+					document.getElementById("join-error").innerHTML = response;
+				} else {
+					window.location.href = response;
+				}
+			}
+			request.send(new FormData(e.target));
+			e.preventDefault;
 		});
 	</script>
 </form>
