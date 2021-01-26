@@ -11,8 +11,8 @@
     - [x] create code
   - [ ] add teachers
     - [ ] add indivdually
-    - [ ] create invite link
-    - [ ] create code
+    - [x] create invite link
+    - [x] create code
   - [ ] edit name, description, image
 - [ ] join class with code
 - [ ] create assignments

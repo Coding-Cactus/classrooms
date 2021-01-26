@@ -16,7 +16,7 @@
 
 <h2>Join a Classroom</h2>
 <form method="POST" id="join-class-form" action="/join">
-	<input type="text" name="invite_code" id="invite_code" placeholder="Enter code" required>
+	<input autocomplete="off" type="text" name="invite_code" id="invite_code" placeholder="Enter code" required>
 	<button id="invite_code_submit" type="submit" disabled>Join</button>
 	<div class="error" id="join-error"></div>
 	<script>
@@ -40,7 +40,7 @@
 				}
 			}
 			request.send(new FormData(e.target));
-			e.preventDefault;
+			e.preventDefault();
 		});
 	</script>
 </form>
