@@ -69,10 +69,10 @@ def landing():
 
 @app.route("/getmakeclassform")
 def getmakeclassform():
-	return render_template("create_class.html", langs=util.langs)
+	return render_template("create_class.html", type="make", pfp_url="https://res.cloudinary.com/codingcactus/image/upload/v1611481743/classrooms/repl_logo_p9bqek.png", langs=util.langs)
 
 
-@app.route("/createclass", methods=["POST"])
+@app.route("/makeclass", methods=["POST"])
 def make_class():
 	form = request.form
 	files = request.files
@@ -136,6 +136,69 @@ def make_class():
 		"teacherInviteCode": None
 	}
 	db["users"][user_id]["classrooms"].append(classroom_id)
+	db.save()
+	
+	return f"/classroom/{classroom_id}/teachers"
+
+
+@app.route("/geteditclassform", methods=["POST"])
+def geteditclassform():
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	class_id = request.form.get("classId", None)
+
+	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"]:
+		return abort(404)
+
+	classroom = db["classrooms"][class_id]
+
+	return render_template("create_class.html", type="edit", name=classroom["name"], language=classroom["language"], description=classroom["description"], pfp_url=classroom["classroom_pfp_url"], langs=util.langs)
+
+
+@app.route("/editclass", methods=["POST"])
+def edit_class():
+	form = request.form
+	files = request.files
+	user = util.verify_headers(request.headers)
+
+	name = form.get("name", None)
+	classroom_id = form.get("classId", None)
+	description = form.get("description", None)
+	classroom_pfp = files.get("classroom-pfp", None)
+	try: Image.open(classroom_pfp)
+	except: classroom_pfp = None
+
+	user = (asyncio.run(client.get_user(user)))
+	user_id = str(user.id)
+
+	if len(name.replace(" ", "")) == 0 or not name:
+		return "Invalid Name"
+	if classroom_id not in db["classrooms"] or user_id not in db["classrooms"][classroom_id]["teachers"]:
+		return abort(404)
+	if classroom_pfp != None and not util.allowed_file(classroom_pfp.filename):
+		return "Invalid File Type"
+	if len(description.replace(" ", "")) == 0:
+		description = "A " + util.langs[db["classrooms"][classroom_id]["language"]]["name"] + " classroom"
+
+
+	if not classroom_pfp:
+		cloud_img_url = db["classrooms"][classroom_id]["classroom_pfp_url"]
+	else:
+		Image.open(classroom_pfp).save(classroom_id+".png")
+		r = cloudinary.uploader.upload(classroom_id+".png",
+			folder = "classrooms/",
+			public_id = classroom_id,
+			overwrite = True,
+			resource_type = "image"				
+		)
+		cloud_img_url = r["url"].replace("http://", "https://")
+		os.remove(classroom_id+".png")
+
+	
+	db.load()
+	db["classrooms"][classroom_id]["name"] = name
+	db["classrooms"][classroom_id]["description"] = description
+	db["classrooms"][classroom_id]["classroom_pfp_url"] = cloud_img_url
 	db.save()
 	
 	return f"/classroom/{classroom_id}/teachers"
@@ -242,6 +305,9 @@ def invite(inviteLink):
 		if user_id not in db["classrooms"][class_id]["students"]:
 			db["classrooms"][class_id]["students"].append(user_id)
 			db["users"][user_id]["classrooms"].append(class_id)
+			for invite in db["users"][user_id]["classroomInvites"]:
+				if class_id == invite["class_id"] and invite["type"] == "student":
+					db["users"][user_id]["classroomInvites"].remove(invite)
 			db.save()
 		return redirect(f"/classroom/{class_id}")
 
@@ -250,6 +316,9 @@ def invite(inviteLink):
 		if user_id not in db["classrooms"][class_id]["teachers"]:
 			db["classrooms"][class_id]["teachers"].append(user_id)
 			db["users"][user_id]["classrooms"].append(class_id)
+			for invite in db["users"][user_id]["classroomInvites"]:
+				if class_id == invite["class_id"] and invite["type"] == "teacher":
+					db["users"][user_id]["classroomInvites"].remove(invite)
 			db.save()
 		return redirect(f"/classrooms/{class_id}/teachers")
 

@@ -1,17 +1,42 @@
-document.getElementById("make-class").addEventListener("click", () => {
+function makeClass(type) {
 	let request = new XMLHttpRequest();
-	request.open("GET", "/getmakeclassform", true);
+	if (type === "make") {
+		request.open("GET", "/get"+type+"classform", true);
+	} else {
+		request.open("POST", "/get"+type+"classform", true);		
+	}
 	request.onload = function() {
-		document.getElementById("make-class-popup").innerHTML = request.responseText;
+		document.getElementById(type+"-class-popup").innerHTML = request.responseText;
+		
+		if (type == "edit") {
+			document.getElementById("language-select").disabled = true;
+		}
+
 		document.getElementById("cancel").addEventListener("click", (e) => {
-			document.getElementById("make-class-popup").innerHTML = "";
+			document.getElementById(type+"-class-popup").innerHTML = "";
 			e.preventDefault();
 		});
 		document.getElementById("close").addEventListener("click", () => {
-			document.getElementById("make-class-popup").innerHTML = "";
+			document.getElementById(type+"-class-popup").innerHTML = "";
 		});
 
 		document.getElementById("name").addEventListener("keyup", () => {
+			if (langs.includes(document.getElementById("language-select").value.toLowerCase()) && document.getElementById("name").value.length > 0) {
+				document.getElementById("submit").disabled = false;
+			} else{
+				document.getElementById("submit").disabled = true;				
+			}
+		});
+
+		document.getElementById("classroom-pfp").addEventListener("change", () => {
+			if (langs.includes(document.getElementById("language-select").value.toLowerCase()) && document.getElementById("name").value.length > 0) {
+				document.getElementById("submit").disabled = false;
+			} else{
+				document.getElementById("submit").disabled = true;				
+			}
+		});
+
+		document.getElementById("description").addEventListener("change", () => {
 			if (langs.includes(document.getElementById("language-select").value.toLowerCase()) && document.getElementById("name").value.length > 0) {
 				document.getElementById("submit").disabled = false;
 			} else{
@@ -142,21 +167,35 @@ document.getElementById("make-class").addEventListener("click", () => {
 			fr.readAsDataURL(files[0]);
 		});
 
-		document.getElementById("make-class-form").addEventListener("submit", (e) => {
+		document.getElementById(type+"-class-form").addEventListener("submit", (e) => {
 			let request = new XMLHttpRequest();
-			request.open('POST', "/createclass", true);
+			request.open('POST', "/"+type+"class", true);
 			request.onload = function() {
 				let response = request.responseText;
 				if (response.includes("Invalid")) {
-					document.getElementById("create-class-response").innerHTML = response;
+					document.getElementById(type+"-class-response").innerHTML = response;
 				} else {
 					window.location.href = response;
 				}
 			}
-			request.send(new FormData(e.target));
+			data = new FormData(e.target)
+			data.append("classId", document.getElementById("classroomId").innerHTML);
+			request.send(data);
 			e.preventDefault();
 		});
 
 	};
-	request.send();
-});
+	if (type == "make") {
+		request.send();
+	} else {
+		data = new FormData();
+		data.append("classId", document.getElementById("classroomId").innerHTML);
+		request.send(data);
+	}
+}
+
+if (document.getElementById("make-class") !== null) {
+	document.getElementById("make-class").addEventListener("click", () => makeClass("make"));
+} else {
+	document.getElementById("edit-class").addEventListener("click", () => makeClass("edit"));
+}

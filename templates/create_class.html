@@ -2,19 +2,19 @@
 	<div class="content-container">
 		<div class="content-wrapper" id="new-classroom">
 			<div class="content">
-				<h1>Create a Classroom</h1>
-				<form method="POST" id="make-class-form" action="/createclass" enctype="multipart/form-data">
+				<h1>{{type.title()}} a Classroom</h1>
+				<form method="POST" id="{{type}}-class-form" action="/{{type}}class" enctype="multipart/form-data">
 					<div class="inputs">
 						<div class="input-wrapper">
 							<div class="input">
-								<input autocomplete="off" type="text" name="name" id="name" placeholder="Name" required>
+								<input autocomplete="off" type="text" name="name" id="name" placeholder="Name" value="{{name}}" required>
 							</div>
 						</div>
 						<div class="input-wrapper">
 							<div class="language-selector">
 								<div class="input">
 									<div class="drop-wrap">
-										<input autocomplete="off" type="text" name="language" id="language-select" placeholder="Language" required>
+										<input autocomplete="off" type="text" name="language" id="language-select" placeholder="Language" value="{{language}}" required>
 										<ul class="dropdown" id="langs">
 											{% for lang in langs %}
 												<li data-langname="{{langs[lang]['name']}}"><img alt="{{langs[lang]['name']}}" src="{{langs[lang]['img']}}"><span class="text">{{langs[lang]['name']}}</span></li>
@@ -26,19 +26,19 @@
 						</div>
 					</div>
 					<div class="desc-input">
-						<textarea autocomplete="off" name="description" id="description" placeholder="Description (optional)"></textarea>
+						<textarea autocomplete="off" name="description" id="description" placeholder="Description (optional)" >{{description}}</textarea>
 					</div>
 					<div class="v-stack">
 						<div class="image-output-wrapper">
-							<img class="image-output" id="image-output" src="static/repl_logo.png">
+							<img class="image-output" id="image-output" src="{{pfp_url}}">
 						</div>
 						<div class="image-input">
 							<input type="file" name="classroom-pfp" id="classroom-pfp" accept="image/*">
 						</div>
 					</div>
-					<div id="create-class-response" class="error"></div>
+					<div id="{{type}}-class-response" class="error"></div>
 					<button id="cancel">Cancel</button>
-					<button type="submit" id="submit" disabled>Create Classroom</button>
+					<button type="submit" id="submit" disabled>{{type.title()}} Classroom</button>
 				</form>
 			</div>
 		</div>

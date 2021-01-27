@@ -4,7 +4,7 @@
 - [x] landing page
   - [x] list all classes
   - [x] create new class (teachers only)
-- [ ] edit classroom
+- [x] edit classroom
   - [x] add students
     - [x] add indivdually
     - [x] create invite link
@@ -13,11 +13,12 @@
     - [x] add indivdually
     - [x] create invite link
     - [x] create code
-  - [ ] edit name, description, image
+  - [x] edit name, description, image
 - [x] join class with code
-- [ ] create assignments
-- [ ] view list of assignments
-- [ ] embed repls in assignments
-- [ ] submit assignments
-- [ ] teacher stuff like marking and feedback
+- [ ] assignments
+  - [ ] create assignments
+  - [ ] view list of assignments
+  - [ ] embed repls in assignments
+  - [ ] submit assignments
+  - [ ] teacher stuff like marking and feedback
 - [ ] classroom templates
