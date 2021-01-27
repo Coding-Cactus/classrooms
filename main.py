@@ -143,6 +143,7 @@ def make_class():
 
 @app.route("/geteditclassform", methods=["POST"])
 def geteditclassform():
+	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
 	user_id = str(user.id)
 	class_id = request.form.get("classId", None)
@@ -515,4 +516,5 @@ def favicon():
 
 
 
+util.loop_refresh()
 app.run("0.0.0.0")

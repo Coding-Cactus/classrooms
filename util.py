@@ -1,4 +1,6 @@
-import json, random
+import json, random, os, easypydb, repltalk, asyncio, threading
+
+db = easypydb.DB("db", os.getenv("dbToken"))
 
 def verify_headers(headers):
     name = headers.get("X-Replit-User-Name")
@@ -29,3 +31,29 @@ def randomstr(num):
 	for i in range(num):
 		s += chr(random.choice([random.randint(48, 57), random.randint(65, 90)]))
 	return s
+
+client = repltalk.Client()
+
+async def refresh_user_info():
+	db.load()
+	for user_id in db["users"]:
+		user = await client.get_user_by_id(int(user_id))
+		print(user)
+		if str(user) != "None":
+			db["users"][user_id]["name"] = user.name
+			db["users"][user_id]["pfp"] = user.avatar
+			db["users"][user_id]["first_name"] = user.first_name
+			db["users"][user_id]["last_name"] = user.last_name
+			db["users"][user_id]["roles"] = parse_roles(user.roles)
+			db.save()
+			print(user.avatar)
+		await asyncio.sleep(1)
+
+
+def loop_refresh():
+	def func_wrapper():
+		loop_refresh()
+		asyncio.run(refresh_user_info())
+	t = threading.Timer(600, func_wrapper)
+	t.start()
+	return t
