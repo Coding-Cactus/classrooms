@@ -14,7 +14,7 @@
     - [x] create invite link
     - [x] create code
   - [ ] edit name, description, image
-- [ ] join class with code
+- [x] join class with code
 - [ ] create assignments
 - [ ] view list of assignments
 - [ ] embed repls in assignments
