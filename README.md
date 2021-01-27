@@ -6,4 +6,4 @@ This is a replacement for repl.it's classrooms feature now that it has been shut
 
 Teachers can create classrooms  with the `Create` button on the landing page after logging in with repl auth (to be a teacher you must have the teacher role on repl.it (add it [here](https://repl.it/account))
 
-At `/classrooms/<classid>/teachers` you can add students and teachers with either and invite link or a code (adding by username not yet added)
+At `/classrooms/<classid>/teachers` you can add students and teachers with either and invite link or a code, or by inviting them by their username. Invites appear on the main page for them to accept or decline.

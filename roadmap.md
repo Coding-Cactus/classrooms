@@ -5,12 +5,12 @@
   - [x] list all classes
   - [x] create new class (teachers only)
 - [ ] edit classroom
-  - [ ] add students
-    - [ ] add indivdually
+  - [x] add students
+    - [x] add indivdually
     - [x] create invite link
     - [x] create code
-  - [ ] add teachers
-    - [ ] add indivdually
+  - [x] add teachers
+    - [x] add indivdually
     - [x] create invite link
     - [x] create code
   - [ ] edit name, description, image

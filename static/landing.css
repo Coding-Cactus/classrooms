@@ -33,20 +33,66 @@ h2 {
 }
 
 .card {
-	position: relative;
 	--card-height: 420px;
 	height: var(--card-height);
+	pointer-events: none;
+}
+
+.card, .invite-card {
+	position: relative;
 	background-color: #ffffff;
 	border: 1px solid #e0e0e0;
 	border-radius: var(--border-radius-2);
-	pointer-events: none;
 	-webkit-transition: 0.1s box-shadow;
 	transition: 0.1s box-shadow;
 	overflow: hidden;
 }
 
+.invite-card {
+	font-size: var(--font-size-desktop-text-large);
+	margin: var(--spacing-1) 0;
+	padding: var(--spacing-1);
+	width: fit-content;
+}
+
 .card:hover {
 	box-shadow: var(--shadow-2);
+}
+
+.invite-card:hover {
+	box-shadow: var(--shadow-1);
+}
+
+.invite-card .options-wrapper {
+	margin-left: var(--spacing-1);
+}
+
+.accept {
+	color: var(--color-positive-1);
+	cursor: pointer;
+	border-radius: 50%;
+}
+
+.decline {
+	color: var(--color-negative-1);
+	cursor: pointer;
+	border-radius: 50%;
+}
+
+.accept:hover {
+	background-color: var(--color-positive-1);
+	color: #ffffff;
+}
+
+.decline:hover {
+	background-color: var(--color-negative-1);
+	color: #ffffff;
+}
+
+
+.invite-card ion-icon {
+	transform: scale(1.5) translateY(-1px);
+	margin-left: var(--spacing-half);
 }
 
 .link-blanket {
@@ -61,7 +107,7 @@ h2 {
 	pointer-events: all;
 }
 
-.card .pfp {
+.card .pfp, .invite-card .pfp {
 	width: 24px;
 	min-width: 24px;
 	height: 24px;
@@ -74,6 +120,7 @@ h2 {
 	position: relative;
 	border: 1px solid #e0e0e0;
 }
+
 
 
 .card .image {

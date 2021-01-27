@@ -45,6 +45,50 @@
 	</script>
 </form>
 
+{% if invites|length != 0 %}
+	<h2>Classroom Invites</h2>
+	{% for invite in invites %}
+		<div class="invite-card">
+			<div class="h-stack">
+				<div class="h-stack">
+					<a href="https://repl.it/@{{users[allClassrooms[invite['class_id']]['owner_id']]['username']}}"><img class="pfp" style="background-image:url({{users[allClassrooms[invite['class_id']]['owner_id']]['pfp']}})"></a>
+					<a class="username" href="https://repl.it/@{{users[allClassrooms[invite['class_id']]['owner_id']]['username']}}">{{users[allClassrooms[invite['class_id']]['owner_id']]['username']}}</a>
+				</div>
+				<span>
+				has invited you to be a {{invite['type']}} in their classroom <b>{{allClassrooms[invite["class_id"]]["name"]}}</b></span>
+				<span data-type="{{invite['type']}}" data-classid="{{invite['class_id']}}" class="options-wrapper">
+					<ion-icon class="accept" name="checkmark-circle-outline"></ion-icon>
+					<ion-icon class="decline" name="close-circle-outline"></ion-icon>
+				</span>
+			</div>
+		</div>
+	{% endfor %}
+	<script>
+		let items = document.querySelectorAll(".options-wrapper");
+		items.forEach( item => {
+			let type = item.dataset.type;
+			let class_id = item.dataset.classid;
+			let children = item.children;
+			for (var i = 0; i < children.length; i++) {
+				let child = children[i];
+				let decision = child.className;
+				child.addEventListener("click", () => {
+					let request = new XMLHttpRequest();
+					request.open("POST", "/"+decision+"invite", true);
+					request.onload = function() {
+						location.reload();						
+					}
+					data = new FormData();
+					data.append("classId", class_id);
+					data.append("type", type);
+					request.send(data);
+				});
+			}
+		});
+	</script>
+{% endif %}
+
+
 <h2>Your Classrooms</h2>
 <div id="class-list">
 	{% for class in userClassrooms %}
@@ -55,7 +99,7 @@
 			<div class="v-stack">
 				<h1 class="heading">{{allClassrooms[class]["name"]}}</h1>
 				<div class="h-stack">
-					<a href="https://repl.it/@{{users[allClassrooms[class]['owner_id']]['username']}}"<img class="pfp" style="background-image:url({{users[allClassrooms[class]['owner_id']]['pfp']}})"></a>
+					<a href="https://repl.it/@{{users[allClassrooms[class]['owner_id']]['username']}}"><img class="pfp" style="background-image:url({{users[allClassrooms[class]['owner_id']]['pfp']}})"></a>
 					<a class="username" href="https://repl.it/@{{users[allClassrooms[class]['owner_id']]['username']}}">{{users[allClassrooms[class]['owner_id']]['username']}}</a>
 				</div>
 				<div class="text" style="max-height: 50px;">{{allClassrooms[class]["description"]}}</div>

@@ -4,11 +4,12 @@
 			<div class="content">
 				<h1>Add {{type}}s</h1>
 				<h3>Invite {{type.title()}}s</h3>
-				<form method="POST" action="/invitestudent">
+				<form method="POST" id="invite{{type}}" action="/invite{{type}}">
 					<div class="h-stack">
 						<input type="text" id="invite-username" name="username" autocomplete="off" placeholder="Username" required>
 						<button type="submit" id="invite-submit" disabled>Invite</button>
 					</div>
+					<div id="invite-response"></div>
 				</form>
 				<h3>Invite Link</h3>
 				<div class="h-stack">

@@ -51,7 +51,8 @@ def before_request():
 				"first_name": user.first_name,
 				"last_name": user.last_name,
 				"roles": util.parse_roles(user.roles),
-				"classrooms": []
+				"classrooms": [],
+				"classroomInvites": []
 			}
 			db.save()
 
@@ -63,7 +64,7 @@ def landing():
 	
 	user_id = str(asyncio.run(client.get_user(user)).id)
 	db.load()
-	return render_template("landing.html", teacher=("teacher" in db["users"][user_id]["roles"]), allClassrooms=db["classrooms"], userClassrooms=db["users"][user_id]["classrooms"], users=db["users"], langs=util.langs)
+	return render_template("landing.html", teacher=("teacher" in db["users"][user_id]["roles"]), allClassrooms=db["classrooms"], userClassrooms=db["users"][user_id]["classrooms"], users=db["users"], langs=util.langs, invites=db["users"][user_id]["classroomInvites"])
 
 
 @app.route("/getmakeclassform")
@@ -282,11 +283,167 @@ def join():
 	return "Invalid Code"
 
 
+@app.route("/invitestudent", methods=["POST"])
+def invitestudent():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	class_id = request.form.get("classId", None)
+
+	student = asyncio.run(client.get_user(request.form.get("username", "")))
+
+	if str(student) == "None":
+		return "User not found"
+
+	if not class_id or class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"]:
+		return abort(404)
+
+	student_id = str(student.id)
+
+	if student_id not in db["users"]:
+		db["users"][student_id] = {
+			"username": student.name,
+			"pfp": student.avatar,
+			"first_name": student.first_name,
+			"last_name": student.last_name,
+			"roles": util.parse_roles(student.roles),
+			"classrooms": [],
+			"classroomInvites": []
+		}
+		db.save()
+	
+	if user_id == class_id:
+		return "You can't invite yourself"
+
+	if class_id in db["users"][student_id]["classroomInvites"]:
+		return "User has already been invited"
+
+	if student_id in db["classrooms"][class_id]["students"]:
+		return "User is already a student in this classroom"
+
+	db["users"][student_id]["classroomInvites"].append({
+		"class_id": class_id,
+		"type": "student"
+	})
+	db.save()
+
+	return "User has been invited"
+
+
+@app.route("/inviteteacher", methods=["POST"])
+def inviteteacher():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	class_id = request.form.get("classId", None)
+
+	teacher = asyncio.run(client.get_user(request.form.get("username", "")))
+
+	if str(teacher) == "None":
+		return "User not found"
+
+	if not class_id or class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"]:
+		return abort(404)
+
+	teacher_id = str(teacher.id)
+
+	if teacher_id not in db["users"]:
+		db["users"][teacher_id] = {
+			"username": teacher.name,
+			"pfp": teacher.avatar,
+			"first_name": teacher.first_name,
+			"last_name": teacher.last_name,
+			"roles": util.parse_roles(teacher.roles),
+			"classrooms": [],
+			"classroomInvites": []
+		}
+		db.save()
+	
+	if user_id == class_id:
+		return "You can't invite yourself"
+
+	if "teacher" not in db["users"][teacher_id]["roles"]:
+		return "User is not a teacher"
+
+	if class_id in db["users"][teacher_id]["classroomInvites"]:
+		return "User has already been invited"
+
+	if teacher_id in db["classrooms"][class_id]["teachers"]:
+		return "User is already a teacher in this classroom"
+
+	db["users"][teacher_id]["classroomInvites"].append({
+		"class_id": class_id,
+		"type": "teacher"
+	})
+	db.save()
+
+	return "User has been invited"
+
+
+@app.route("/acceptinvite", methods=["POST"])
+def accept():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	class_id = request.form.get("classId", None)
+	inviteType = request.form.get("type", None)
+
+	if not inviteType:
+		return abort(404)
+
+	if not class_id or class_id not in db["classrooms"] or user_id in db["classrooms"][class_id][inviteType+"s"]:
+		return abort(404)
+	
+	
+	found = False
+	for invite in db["users"][user_id]["classroomInvites"]:
+		if class_id == invite["class_id"]:
+			db["users"][user_id]["classroomInvites"].remove(invite)
+			found = True
+			break
+
+	if not found:
+		return abort(404)
+
+	db["classrooms"][class_id][inviteType+"s"].append(user_id)
+	db["users"][user_id]["classrooms"].append(class_id)
+	db.save()
+
+	return "Success"
+
+
+@app.route("/declineinvite", methods=["POST"])
+def decline():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	class_id = request.form.get("classId", None)
+	inviteType = request.form.get("type", None)
+
+	if not inviteType:
+		return abort(404)
+
+	if not class_id or class_id not in db["classrooms"] or user_id in db["classrooms"][class_id][inviteType+"s"]:
+		return abort(404)
+	
+	found = False
+	for invite in db["users"][user_id]["classroomInvites"]:
+		if class_id == invite["class_id"]:
+			db["users"][user_id]["classroomInvites"].remove(invite)
+			found = True
+			break		
+	db.save()
+
+	if not found:
+		return abort(404)
+
+	return "Success"
 
 
 @app.route("/favicon.ico")
 def favicon():
 	return redirect("https://repl.it/public/images/favicon.ico")
+
 
 
 app.run("0.0.0.0")

@@ -7,6 +7,23 @@ function add_people(type) {
 			document.getElementById("add-"+type+"-popup").innerHTML = "";
 		});
 
+		document.getElementById("invite"+type.substring(0, type.length-1)).addEventListener("submit", (e) => {
+			let request = new XMLHttpRequest();
+			request.open("POST", "/invite"+type.substring(0, type.length-1), true);
+			request.onload = function() {
+				document.getElementById("invite-response").innerHTML = request.responseText
+				if (request.responseText === "User has been invited") {
+					document.getElementById("invite-response").className = "success"
+				} else {
+					document.getElementById("invite-response").className = "error"					
+				}
+			}
+			let data = new FormData(e.target)
+			data.append("classId", document.getElementById("classroomId").innerHTML);
+			request.send(data);
+			e.preventDefault();
+		});
+
 		document.getElementById("invite-username").addEventListener("keyup", () => {
 			if (document.getElementById("invite-username").value.length >= 2) {
 				document.getElementById("invite-submit").disabled = false;
@@ -33,7 +50,7 @@ function add_people(type) {
 
 	}
 	const formData = new FormData();
-  	formData.append('classId', document.getElementById("classroomId").innerHTML);
+  	formData.append("classId", document.getElementById("classroomId").innerHTML);
 	request.send(formData);
 }
 

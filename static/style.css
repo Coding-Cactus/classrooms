@@ -6,8 +6,10 @@
 	--font-weight-medium: 500;
 	--font-size-desktop-text-small: 14px;
 	--font-size-desktop-text-medium: 16px;
+    --font-size-desktop-text-large: 18px;
 	--color-white: #ffffff;
 	--color-overlay: rgba(0,0,0,0.5);
+    --shadow-1: 0 4px 4px rgba(0,0,0,0.2);
 	--shadow-2: 0 4px 8px rgba(0,0,0,0.2);
 	--spacing-1: 8px;
 	--spacing-2: 16px;
@@ -31,6 +33,7 @@
 	--color-primary-3: #3272c2;
 	--color-primary-transparent-1: rgba(52,133,228,0.48);
 	--color-negative-1: #ff491c;
+    --color-positive-1: #21a243;
 }
 
 
@@ -248,6 +251,10 @@ button[type="submit"]:hover {
 	color: var(--color-negative-1);
 }
 
+.success {
+	color: var(--color-positive-1);
+}
+
 
 
 .h-stack {
@@ -284,4 +291,8 @@ button[type="submit"]:hover {
 	-webkit-flex-wrap: wrap;
 	-ms-flex-wrap: wrap;
 	flex-wrap: wrap;
+}
+
+ion-icon {
+	vertical-align: middle;
 }
