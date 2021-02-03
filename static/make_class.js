@@ -179,7 +179,9 @@ function makeClass(type) {
 				}
 			}
 			data = new FormData(e.target)
-			data.append("classId", document.getElementById("classroomId").innerHTML);
+			if ( type == "edit") {
+				data.append("classId", document.getElementById("classroomId").innerHTML);
+			}
 			request.send(data);
 			e.preventDefault();
 		});

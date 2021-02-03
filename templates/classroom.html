@@ -1,5 +1,33 @@
 {% extends "classroom_base.html" %}
 
 {% block main %}
-<p>not implemented yet</p>
+
+{% if teacher %}
+	<h2>Create an Assignment</h2>
+	<button id="make-assignment">Create</button>
+	<div id="classroomId" style="display: none;">{{classroomId}}</div>
+	<div id="make-assignment-popup"></div>
+	<script src="/static/make_assignment.js"></script>
+{% endif %}
+
+<h2>Assignments</h2>
+<table id="assignments-list">
+	<tr>
+		<th>Assignment Name</th>
+		{% if not teacher %}
+			<th>Status</th>
+		{% endif %}
+	</tr>
+	{% for assignment in classroom["assignments"] %}
+			<tr class="clickeable" onclick="window.location='{{classroomId}}/{{assignment}}';">
+				{% if not teacher %}
+					<td>{{assignments[assignment]["name"]}}</td>
+					<td>{{assignments[assignment]["submissions"][userId]["status"]}}</td>
+				{% else %}
+					<td>{{assignments[assignment]["name"]}}</td>	
+				{% endif %}
+			</tr>
+	{% endfor %}
+</table>
+
 {% endblock %}

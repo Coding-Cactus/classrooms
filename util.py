@@ -38,7 +38,6 @@ async def refresh_user_info():
 	db.load()
 	for user_id in db["users"]:
 		user = await client.get_user_by_id(int(user_id))
-		print(user)
 		if str(user) != "None":
 			db["users"][user_id]["name"] = user.name
 			db["users"][user_id]["pfp"] = user.avatar
@@ -46,7 +45,6 @@ async def refresh_user_info():
 			db["users"][user_id]["last_name"] = user.last_name
 			db["users"][user_id]["roles"] = parse_roles(user.roles)
 			db.save()
-			print(user.avatar)
 		await asyncio.sleep(1)
 
 

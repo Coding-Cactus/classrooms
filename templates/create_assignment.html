@@ -1,0 +1,30 @@
+<div class="cover">
+	<div class="content-container">
+		<div class="content-wrapper" id="new-assignment">
+			<div class="content">
+				<h1>{{type.title()}} an Assignment</h1>
+				<form method="POST" id="{{type}}-assignment-form" action="/{{type}}assignment">
+					<div class="input-wrapper">
+						<div class="input">
+							<input autocomplete="off" type="text" name="name" id="name" placeholder="Name" value="{{name}}" required>
+						</div>
+					</div>
+					<div class="desc-input">
+						<textarea autocomplete="off" name="instructions" id="instructions" placeholder="Instructions" required>{{instructions}}</textarea>
+					</div>
+					<div id="{{type}}-assignment-response" class="error"></div>
+					<button id="cancel">Cancel</button>
+					<button type="submit" id="submit" disabled>{{type.title()}} Assignment</button>
+				</form>
+			</div>
+		</div>
+		<div class="close-wrapper">
+			<button class="close" id="close">
+				<svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1" fill="currentColor" style="vertical-align: middle;">
+					<path d="M18 6L6 18" stroke-width="3" stroke-linejoin="round"></path>
+					<path d="M6 6L18 18" stroke-width="3" stroke-linejoin="round"></path>
+				</svg>
+			</button>
+		</div>
+	</div>
+</div>

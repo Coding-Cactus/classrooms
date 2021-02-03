@@ -1,0 +1,91 @@
+html, body, main {
+	height: 100%;
+	max-width: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+main {
+	height: calc(100% - 48px)
+}
+
+header h1 {
+	display: none;
+}
+
+.column-holder {
+	display: flex;
+	flex-flow: row;
+	height: 100%;
+}
+
+.column-holder .column {
+	position: relative;
+	background-color: #fafafa;
+	border-right: 1px solid #aaa;
+	width: 50%;
+}
+
+.column-holder .column:last-of-type {
+	flex: 1 1 0%;
+	border-right: none;
+	border-left: 1px solid #aaa;	
+}
+
+#assignment-name {
+	padding: 11px 0;
+	text-align: center;
+	background-color: #f3f3f0;
+	box-shadow: 0 2px 3px #787870;
+}
+
+#instructions {
+	padding: var(--spacing-1);
+}
+
+#instructions-heading {
+	border-bottom: 1px solid #ccc;
+	margin-bottom: var(--spacing-1);
+}
+
+#set-repl {
+	position: absolute;
+	display: block;
+	width: 80%;
+	top: calc(50% - 57px);
+	left: 10%;
+}
+
+#set-repl * {
+	margin-bottom: var(--spacing-1);
+}
+
+#set-repl button[type="submit"] {
+	width: 100%;
+}
+
+.submit-assignment {
+	position: absolute;
+	margin: 0;
+	top: var(--spacing-1);
+	right: var(--spacing-1);
+}
+
+#submit, #resubmit {
+	background-color: var( --color-green-1);
+	border-color: var( --color-green-3);
+}
+
+
+#unsubmit {
+	background-color: var( --color-red-1);
+	border-color: var( --color-red-3);
+}
+
+#submit:focus, #resubmit:focus {
+	box-shadow: 0 0 0 3px var(--color-green-transparent-1);
+}
+
+#unsubmit:focus {
+	box-shadow: 0 0 0 3px var(--color-red-transparent-1);
+}

@@ -16,9 +16,9 @@
   - [x] edit name, description, image
 - [x] join class with code
 - [ ] assignments
-  - [ ] create assignments
-  - [ ] view list of assignments
-  - [ ] embed repls in assignments
-  - [ ] submit assignments
+  - [x] create assignments
+  - [x] view list of assignments
+  - [x] embed repls in assignments
+  - [x] submit assignments
   - [ ] teacher stuff like marking and feedback
 - [ ] classroom templates

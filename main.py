@@ -32,6 +32,8 @@ cloudinary.config(
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
+base_url = "https://classrooms.codingcactus.repl.co"
+
 
 @app.before_request
 def before_request():
@@ -107,15 +109,16 @@ def make_class():
 	if not classroom_pfp:
 		cloud_img_url = "https://res.cloudinary.com/codingcactus/image/upload/v1611481743/classrooms/repl_logo_p9bqek.png"
 	else:
-		Image.open(classroom_pfp).save(classroom_id+".png")
-		r = cloudinary.uploader.upload(classroom_id+".png",
+		filename = classroom_pfp.filename
+		Image.open(classroom_pfp).save(filename)
+		r = cloudinary.uploader.upload(filename,
 			folder = "classrooms/",
 			public_id = classroom_id,
 			overwrite = True,
 			resource_type = "image"				
 		)
 		cloud_img_url = r["url"].replace("http://", "https://")
-		os.remove(classroom_id+".png")
+		os.remove(filename)
 
 	
 	db.load()
@@ -185,15 +188,16 @@ def edit_class():
 	if not classroom_pfp:
 		cloud_img_url = db["classrooms"][classroom_id]["classroom_pfp_url"]
 	else:
-		Image.open(classroom_pfp).save(classroom_id+".png")
-		r = cloudinary.uploader.upload(classroom_id+".png",
+		filename = classroom_pfp.filename
+		Image.open(classroom_pfp).save(filename)
+		r = cloudinary.uploader.upload(filename,
 			folder = "classrooms/",
 			public_id = classroom_id,
 			overwrite = True,
 			resource_type = "image"				
 		)
 		cloud_img_url = r["url"].replace("http://", "https://")
-		os.remove(classroom_id+".png")
+		os.remove(filename)
 
 	
 	db.load()
@@ -212,7 +216,7 @@ def get_classroom(id):
 	user_id = str(user.id)
 
 	if id in db["users"][user_id]["classrooms"]:
-		return render_template("classroom.html", classroom=db["classrooms"][id], users=db["users"])
+		return render_template("classroom.html", userId=user_id, teacher=(user_id in db["classrooms"][id]["teachers"]), classroomId=id, classroom=db["classrooms"][id], users=db["users"], assignments=db["assignments"])
 	return abort(404)
 
 
@@ -306,22 +310,21 @@ def invite(inviteLink):
 		if user_id not in db["classrooms"][class_id]["students"]:
 			db["classrooms"][class_id]["students"].append(user_id)
 			db["users"][user_id]["classrooms"].append(class_id)
-			for invite in db["users"][user_id]["classroomInvites"]:
-				if class_id == invite["class_id"] and invite["type"] == "student":
-					db["users"][user_id]["classroomInvites"].remove(invite)
+			for assignment in db["classrooms"][class_id]["assignments"]:
+				db["assignments"][assignment]["submissions"][user_id] = {
+					"status": "not viewed",
+					"repl_url": None,
+					"feedback": None
+				}
 			db.save()
-		return redirect(f"/classroom/{class_id}")
+		return redirect(f"{base_url}/classroom/{class_id}")
 
 	if inviteLink in db["teacherInviteLinks"] and "teacher" in util.parse_roles(user.roles):
 		class_id = db["teacherInviteLinks"][inviteLink]
 		if user_id not in db["classrooms"][class_id]["teachers"]:
 			db["classrooms"][class_id]["teachers"].append(user_id)
 			db["users"][user_id]["classrooms"].append(class_id)
-			for invite in db["users"][user_id]["classroomInvites"]:
-				if class_id == invite["class_id"] and invite["type"] == "teacher":
-					db["users"][user_id]["classroomInvites"].remove(invite)
-			db.save()
-		return redirect(f"/classrooms/{class_id}/teachers")
+		return redirect(f"{base_url}/classroom/{class_id}/teachers")
 
 	return abort(404)
 
@@ -332,15 +335,21 @@ def join():
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
 	user_id = str(user.id)
 
-	inviteCode = request.form.get("invite_code", None)
+	inviteCode = request.form.get("invite_code", "None").upper()
 
 	if inviteCode in db["studentInviteCodes"]:
 		class_id = db["studentInviteCodes"][inviteCode]
 		if user_id not in db["classrooms"][class_id]["students"]:
 			db["classrooms"][class_id]["students"].append(user_id)
 			db["users"][user_id]["classrooms"].append(class_id)
+			for assignment in db["classrooms"][class_id]["assignments"]:
+				db["assignments"][assignment]["submissions"][user_id] = {
+					"status": "not viewed",
+					"repl_url": None,
+					"feedback": None
+				}
 			db.save()
-		return redirect(f"/classroom/{class_id}")
+		return redirect(f"{base_url}/classroom/{class_id}")
 
 	if inviteCode in db["teacherInviteCodes"] and "teacher" in util.parse_roles(user.roles):
 		class_id = db["teacherInviteCodes"][inviteCode]
@@ -348,7 +357,7 @@ def join():
 			db["classrooms"][class_id]["teachers"].append(user_id)
 			db["users"][user_id]["classrooms"].append(class_id)
 			db.save()
-		return redirect(f"/classrooms/{class_id}/teachers")
+		return redirect(f"{base_url}/classroom/{class_id}/teachers")
 
 	return "Invalid Code"
 
@@ -477,6 +486,13 @@ def accept():
 
 	db["classrooms"][class_id][inviteType+"s"].append(user_id)
 	db["users"][user_id]["classrooms"].append(class_id)
+	if inviteType == "student":
+		for assignment in db["classrooms"][class_id]["assignments"]:
+			db["assignments"][assignment]["submissions"][user_id] = {
+				"status": "not viewed",
+				"repl_url": None,
+				"feedback": None
+			}
 	db.save()
 
 	return "Success"
@@ -510,10 +526,171 @@ def decline():
 	return "Success"
 
 
+
+@app.route("/getmakeassignmentform", methods=["POST"])
+def getmakeassignmentsform():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	class_id = request.form.get("classId", None)
+
+	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"]:
+		return abort(404)
+
+	return render_template("create_assignment.html", type="make")
+
+
+@app.route("/makeassignment", methods=["POST"])
+def makeassignment():	
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	class_id = request.form.get("classId", None)
+
+	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"]:
+		return abort(404)
+
+	name = request.form.get("name", None)
+	instructions = request.form.get("instructions", None)
+
+	if not name or len(name.replace(" ", "")) == 0:
+		return "Invalid Name"
+	if not instructions or len(instructions.replace(" ", "")) == 0:
+		return "Invalid Instructions"
+
+	assignment_id = str(len(db["assignments"]) + 1)
+	db["assignments"][assignment_id] = {
+		"name": name,
+		"instructions": instructions,
+		"submissions": {}
+	}
+	for student_id in db["classrooms"][class_id]["students"]:
+		db["assignments"][assignment_id]["submissions"][student_id] = {
+			"status": "not viewed",
+			"repl_url": None,
+			"feedback": None
+		}		
+	db["classrooms"][class_id]["assignments"].append(assignment_id)
+	db.save()
+
+	return f"/classroom/{class_id}/{assignment_id}"
+
+
+@app.route("/classroom/<class_id>/<assignment_id>")
+def get_assignment(class_id, assignment_id):
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+
+	if class_id not in db["classrooms"] or assignment_id not in db["classrooms"][class_id]["assignments"]:
+		return abort(404)
+
+	if user_id in db["classrooms"][class_id]["teachers"]:
+		return render_template("teacher_assignments_list.html", classroom=db["classrooms"][class_id], assignment=db["assignments"][assignment_id], users=db["users"], assignment_id=assignment_id)
+	if user_id in db["classrooms"][class_id]["students"]:
+		if db["assignments"][assignment_id]["submissions"][user_id]["status"] == "not viewed":
+			db["assignments"][assignment_id]["submissions"][user_id]["status"] = "viewed"
+			db.save()
+		return render_template("assignment.html", user_id=user_id, classroom=db["classrooms"][class_id], assignment=db["assignments"][assignment_id], submission=db["assignments"][assignment_id]["submissions"][user_id], class_id=class_id, assignment_id=assignment_id)
+	return abort(404)
+
+
+@app.route("/setrepl", methods=["POST"])
+def setrepl():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	repl_url = request.form.get("repl_url", None)
+	class_id = request.form.get("class_id", None)
+	assignment_id = request.form.get("assignment_id", None)
+	if class_id not in db["classrooms"] or assignment_id not in db["classrooms"][class_id]["assignments"] or user_id not in db["classrooms"][class_id]["students"] or db["assignments"][assignment_id]["submissions"][user_id]["repl_url"] != None:
+		return "Invalid"
+
+	if not repl_url:
+		return "No repl provided"
+	
+	if repl_url.lower().startswith("http://"):
+		repl_url = "https://" + repl_url[7:]
+	
+	if not repl_url.lower().startswith("https://repl.it/@" + db["users"][user_id]["name"].lower() + "/"):
+		return "Invalid repl url"
+	
+	if len(repl_url.lower()[8:].split("/")) != 3:
+		return "Invalid repl url"
+
+	repl_url = repl_url.split("#")[0]
+
+	db["assignments"][assignment_id]["submissions"][user_id]["repl_url"] = repl_url
+	db["assignments"][assignment_id]["submissions"][user_id]["status"] = "in progress"
+	db.save()
+
+	return "Success"
+
+	
+
+@app.route("/submit", methods=["POST"])
+def submit():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	
+	class_id = request.form.get("class_id", None)
+	assignment_id = request.form.get("assignment_id", None)
+
+	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["students"] or assignment_id not in db["classrooms"][class_id]["assignments"] or db["assignments"][assignment_id]["submissions"][user_id]["status"] != "in progress":
+		return abort(404)
+
+	db["assignments"][assignment_id]["submissions"][user_id]["status"] = "awaiting feedback"
+	db.save()
+
+	return redirect(f"{base_url}/classroom/{class_id}")
+	
+	
+@app.route("/unsubmit", methods=["POST"])
+def unsubmit():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	
+	class_id = request.form.get("class_id", None)
+	assignment_id = request.form.get("assignment_id", None)
+
+	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["students"] or assignment_id not in db["classrooms"][class_id]["assignments"] or db["assignments"][assignment_id]["submissions"][user_id]["status"] != "awaiting feedback":
+		return abort(404)
+
+	db["assignments"][assignment_id]["submissions"][user_id]["status"] = "in progress"
+	db.save()
+
+	return redirect(f"{base_url}/classroom/{class_id}")
+
+@app.route("/resubmit", methods=["POST"])
+def resubmit():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	
+	class_id = request.form.get("class_id", None)
+	assignment_id = request.form.get("assignment_id", None)
+
+	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["students"] or assignment_id not in db["classrooms"][class_id]["assignments"] or db["assignments"][assignment_id]["submissions"][user_id]["status"] != "sent back":
+		return abort(404)
+
+	db["assignments"][assignment_id]["submissions"][user_id]["status"] = "awaiting feedback"
+	db.save()
+
+	return redirect(f"{base_url}/classroom/{class_id}")
+
+
+
+@app.route("/classroom/<class_id>/<assignment_id>/<student_id>")
+def view_students_submission(class_id, assignment_id, student_id):
+	return "not implemented yet :("
+
+
+
 @app.route("/favicon.ico")
 def favicon():
 	return redirect("https://repl.it/public/images/favicon.ico")
-
 
 
 util.loop_refresh()

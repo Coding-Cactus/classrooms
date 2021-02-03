@@ -14,11 +14,41 @@
 <div id="classroomId" style="display: none;">{{classroomId}}</div>
 <div id="add-students-popup"></div>
 
-<ul>
-	{% for student in classroom["students"] %}
-		<li><a href="https://repl.it/@{{users[student]['username']}}">{{users[student]['username']}}</a></li>
-	{% endfor %}
-</ul>
+<div class="multi-tables">
+	<div class="table-container">
+		<table id="name-table">
+			<tr>
+				<th></th>
+				<th>Username</th>
+				<th>Name</th>
+			{% for student in classroom["students"] %}
+				<tr>
+					<td><a href="https://repl.it/@{{users[student]['username']}}"><img class="pfp" style="background-image:url({{users[student]['pfp']}})"></a></td>
+					<td><a href="https://repl.it/@{{users[student]['username']}}">{{users[student]["username"]}}</a></td>
+					<td>{{users[student]["first_name"]}} {{users[student]["last_name"]}}</td>
+				</tr>
+			{% endfor %}
+		</table>
+	</div><!--
+
+	--><div class="table-container">
+		<table id="assignment-table">
+			<tr><th colspan="999999999">Assignments</th></tr>
+			<tr>
+				{% for assignment in range(10) %}
+					<th>{{assignment}}</th>
+				{% endfor %}
+			</tr>
+			{% for student in classroom["students"] %}
+				<tr>
+					{% for assignment in range(10) %}
+						<td style="height: 69px;">complete</td>
+					{% endfor %}
+				</tr>
+			{% endfor %}
+		</table>
+	</div>
+</div>
 
 
 

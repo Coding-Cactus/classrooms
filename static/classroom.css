@@ -17,3 +17,71 @@ h2 {
 #invite-username, #invite-link, #invite-code {
 	margin: var(--spacing-1);
 }
+
+.pfp {
+	height: var(--spacing-6);
+	width:  var(--spacing-6);
+	display: inline-block;
+	background-size: cover;
+	border-radius: 100%;
+	background-color: #fff;
+	background-position: center;
+	position: relative;
+	border: 1px solid var(--color-border);
+}
+
+tr {
+	height: var(--spacing-6);
+}
+
+tr:not(:first-of-type) {
+	border-top: 1px solid var(--color-border);
+	border-bottom: 1px solid var(--color-border);
+}
+
+td {
+	padding: var(--spacing-1);
+	vertical-align: middle;
+	text-align: center;
+}
+
+table {
+	border-collapse: collapse;
+	margin: var(--spacing-2) auto;
+}
+
+.table-container, .multi-tables {
+	overflow-x: auto;
+	display: inline-block;
+	white-space: nowrap;
+}
+
+.multi-tables {
+	display: block;
+}
+
+#assignment-table tr:not(:first-of-type) {
+	border: 1px solid var(--color-border);
+}
+
+#assignments-list {
+	width: 100%;
+	margin: auto;
+}
+
+
+#assignments-list th, #assignments-list td {
+	text-align: right;
+}
+
+#assignments-list th:first-child, #assignments-list td:first-child {
+	text-align: left;
+}
+
+#student-assignments-list-container {
+	width: 100%;
+}
+
+#student-assignments-list {
+	width: 100%;
+}

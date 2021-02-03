@@ -190,3 +190,7 @@ input[type="file"]::before {
 	margin-left: var(--spacing-1);
 	margin-top: var(--spacing-1);
 }
+
+#instructions {
+	height: 200px;
+}
