@@ -109,7 +109,7 @@ def make_class():
 	if not classroom_pfp:
 		cloud_img_url = "https://res.cloudinary.com/codingcactus/image/upload/v1611481743/classrooms/repl_logo_p9bqek.png"
 	else:
-		filename = classroom_pfp.filename
+		filename = classroom_id + classroom_pfp.filename.split(".")[0]
 		Image.open(classroom_pfp).save(filename)
 		r = cloudinary.uploader.upload(filename,
 			folder = "classrooms/",
@@ -188,7 +188,7 @@ def edit_class():
 	if not classroom_pfp:
 		cloud_img_url = db["classrooms"][classroom_id]["classroom_pfp_url"]
 	else:
-		filename = classroom_pfp.filename
+		filename = classroom_id + classroom_pfp.filename.split(".")[0]
 		Image.open(classroom_pfp).save(filename)
 		r = cloudinary.uploader.upload(filename,
 			folder = "classrooms/",
@@ -227,7 +227,7 @@ def classroom_settings(id):
 	user_id = str(user.id)
 
 	if id in db["users"][user_id]["classrooms"] and user_id in db["classrooms"][id]["teachers"]:
-		return render_template("teachers.html", classroom=db["classrooms"][id], classroomId=id, users=db["users"])
+		return render_template("teachers.html", classroom=db["classrooms"][id], classroomId=id, users=db["users"], assignments=db["assignments"])
 	return abort(404)
 
 

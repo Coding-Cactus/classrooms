@@ -35,14 +35,14 @@
 		<table id="assignment-table">
 			<tr><th colspan="999999999">Assignments</th></tr>
 			<tr>
-				{% for assignment in range(10) %}
-					<th>{{assignment}}</th>
+				{% for assignment in classroom["assignments"] %}
+					<th>{{assignments[assignment]["name"]}}</th>
 				{% endfor %}
-			</tr>
+			</tr>			
 			{% for student in classroom["students"] %}
 				<tr>
-					{% for assignment in range(10) %}
-						<td style="height: 69px;">complete</td>
+					{% for assignment in classroom["assignments"] %}
+						<td style="height: 69px;">{{assignments[assignment]["submissions"][student]["status"]}}</td>
 					{% endfor %}
 				</tr>
 			{% endfor %}
