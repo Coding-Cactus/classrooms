@@ -45,7 +45,7 @@ async def refresh_user_info():
 			db["users"][user_id]["last_name"] = user.last_name
 			db["users"][user_id]["roles"] = parse_roles(user.roles)
 			db.save()
-		await asyncio.sleep(1)
+		await asyncio.sleep(10)
 
 
 def loop_refresh():
