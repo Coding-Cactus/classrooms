@@ -307,24 +307,26 @@ def invite(inviteLink):
 
 	if inviteLink in db["studentInviteLinks"]:
 		class_id = db["studentInviteLinks"][inviteLink]
-		if user_id not in db["classrooms"][class_id]["students"]:
-			db["classrooms"][class_id]["students"].append(user_id)
-			db["users"][user_id]["classrooms"].append(class_id)
-			for assignment in db["classrooms"][class_id]["assignments"]:
-				db["assignments"][assignment]["submissions"][user_id] = {
-					"status": "not viewed",
-					"repl_url": None,
-					"feedback": None
-				}
-			db.save()
-		return redirect(f"{base_url}/classroom/{class_id}")
+		if user_id not in db["classrooms"][class_id]["teachers"]:
+			if user_id not in db["classrooms"][class_id]["students"]:
+				db["classrooms"][class_id]["students"].append(user_id)
+				db["users"][user_id]["classrooms"].append(class_id)
+				for assignment in db["classrooms"][class_id]["assignments"]:
+					db["assignments"][assignment]["submissions"][user_id] = {
+						"status": "not viewed",
+						"repl_url": None,
+						"feedback": None
+					}
+				db.save()
+			return redirect(f"{base_url}/classroom/{class_id}")
 
 	if inviteLink in db["teacherInviteLinks"] and "teacher" in util.parse_roles(user.roles):
 		class_id = db["teacherInviteLinks"][inviteLink]
-		if user_id not in db["classrooms"][class_id]["teachers"]:
-			db["classrooms"][class_id]["teachers"].append(user_id)
-			db["users"][user_id]["classrooms"].append(class_id)
-		return redirect(f"{base_url}/classroom/{class_id}/teachers")
+		if user_id not in db["classrooms"][class_id]["students"]:
+			if user_id not in db["classrooms"][class_id]["teachers"]:
+				db["classrooms"][class_id]["teachers"].append(user_id)
+				db["users"][user_id]["classrooms"].append(class_id)
+			return redirect(f"{base_url}/classroom/{class_id}/teachers")
 
 	return abort(404)
 
@@ -339,25 +341,29 @@ def join():
 
 	if inviteCode in db["studentInviteCodes"]:
 		class_id = db["studentInviteCodes"][inviteCode]
-		if user_id not in db["classrooms"][class_id]["students"]:
-			db["classrooms"][class_id]["students"].append(user_id)
-			db["users"][user_id]["classrooms"].append(class_id)
-			for assignment in db["classrooms"][class_id]["assignments"]:
-				db["assignments"][assignment]["submissions"][user_id] = {
-					"status": "not viewed",
-					"repl_url": None,
-					"feedback": None
-				}
-			db.save()
-		return redirect(f"{base_url}/classroom/{class_id}")
+		if user_id not in db["classrooms"][class_id]["teachers"]:
+			if user_id not in db["classrooms"][class_id]["students"]:
+				db["classrooms"][class_id]["students"].append(user_id)
+				db["users"][user_id]["classrooms"].append(class_id)
+				for assignment in db["classrooms"][class_id]["assignments"]:
+					db["assignments"][assignment]["submissions"][user_id] = {
+						"status": "not viewed",
+						"repl_url": None,
+						"feedback": None
+					}
+				db.save()
+			return redirect(f"{base_url}/classroom/{class_id}")
+		return "You can't be a student and a teacher"
 
 	if inviteCode in db["teacherInviteCodes"] and "teacher" in util.parse_roles(user.roles):
 		class_id = db["teacherInviteCodes"][inviteCode]
-		if user_id not in db["classrooms"][class_id]["teachers"]:
-			db["classrooms"][class_id]["teachers"].append(user_id)
-			db["users"][user_id]["classrooms"].append(class_id)
-			db.save()
-		return redirect(f"{base_url}/classroom/{class_id}/teachers")
+		if user_id not in db["classrooms"][class_id]["students"]:
+			if user_id not in db["classrooms"][class_id]["teachers"]:
+				db["classrooms"][class_id]["teachers"].append(user_id)
+				db["users"][user_id]["classrooms"].append(class_id)
+				db.save()
+			return redirect(f"{base_url}/classroom/{class_id}/teachers")
+		return "You can't be a student and a teacher"
 
 	return "Invalid Code"
 
@@ -391,7 +397,7 @@ def invitestudent():
 		}
 		db.save()
 	
-	if user_id == class_id:
+	if user_id == student_id:
 		return "You can't invite yourself"
 
 	if class_id in db["users"][student_id]["classroomInvites"]:
@@ -399,6 +405,9 @@ def invitestudent():
 
 	if student_id in db["classrooms"][class_id]["students"]:
 		return "User is already a student in this classroom"
+
+	if student_id in db["classrooms"][class_id]["teacher"]:
+		return "User is already a teacher in this classroom"
 
 	db["users"][student_id]["classroomInvites"].append({
 		"class_id": class_id,
@@ -438,7 +447,7 @@ def inviteteacher():
 		}
 		db.save()
 	
-	if user_id == class_id:
+	if user_id == teacher_id:
 		return "You can't invite yourself"
 
 	if "teacher" not in db["users"][teacher_id]["roles"]:
@@ -446,6 +455,9 @@ def inviteteacher():
 
 	if class_id in db["users"][teacher_id]["classroomInvites"]:
 		return "User has already been invited"
+
+	if teacher_id in db["classrooms"][class_id]["students"]:
+		return "User is already a student in this classroom"
 
 	if teacher_id in db["classrooms"][class_id]["teachers"]:
 		return "User is already a teacher in this classroom"
