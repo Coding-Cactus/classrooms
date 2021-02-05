@@ -319,18 +319,3 @@ ion-icon {
 .clickeable {
 	cursor: pointer;
 }
-
-.resizer {
-	position: relative;
-	height: 100%;
-	width: 8px;
-	cursor: col-resize;
-}
-
-.resizer div {
-	top: calc(50% - 21px);
-	left: calc(50% - 1.915px);
-	position: absolute;
-	transform: scaleY(2);
-	user-select: none;
-}

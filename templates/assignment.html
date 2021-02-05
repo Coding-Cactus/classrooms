@@ -5,50 +5,83 @@
 {% endblock %}
 
 {% block main %}
-{% if submission["status"] == "in progress" %}
-	<form class="submit-assignment" method="POST" action="/submit">		
-		<input style="display: none;" name="class_id" value="{{class_id}}" readonly>
-		<input style="display: none;" name="assignment_id" value="{{assignment_id}}" readonly>
-		<button id="submit" type="submit">Submit</button>
-	</form>
-{% elif submission["status"] == "awaiting feedback" %}
-	<form class="submit-assignment" method="POST" action="/unsubmit">		
-		<input style="display: none;" name="class_id" value="{{class_id}}" readonly>
-		<input style="display: none;" name="assignment_id" value="{{assignment_id}}" readonly>
-		<button id="unsubmit" type="submit">Unsubmit</button>
-	</form>
-{% elif submission["status"] == "sent back" %}
-	<form class="submit-assignment" method="POST" action="/submit">		
-		<input style="display: none;" name="class_id" value="{{class_id}}" readonly>
-		<input style="display: none;" name="assignment_id" value="{{assignment_id}}" readonly>
-		<button id="resubmit" type="submit">Resubmit</button>
-	</form>
+{% if type == "student" %}
+	{% if submission["status"] == "in progress" %}
+		<form class="submit-assignment" method="POST" action="/submit">		
+			<input style="display: none;" name="class_id" value="{{class_id}}" readonly>
+			<input style="display: none;" name="assignment_id" value="{{assignment_id}}" readonly>
+			<button id="submit" type="submit">Submit</button>
+		</form>
+	{% elif submission["status"] == "awaiting feedback" %}
+		<form class="submit-assignment" method="POST" action="/unsubmit">		
+			<input style="display: none;" name="class_id" value="{{class_id}}" readonly>
+			<input style="display: none;" name="assignment_id" value="{{assignment_id}}" readonly>
+			<button id="unsubmit" type="submit">Unsubmit</button>
+		</form>
+	{% elif submission["status"] == "returned" %}
+		<form class="submit-assignment" method="POST" action="/resubmit">		
+			<input style="display: none;" name="class_id" value="{{class_id}}" readonly>
+			<input style="display: none;" name="assignment_id" value="{{assignment_id}}" readonly>
+			<button id="resubmit" type="submit">Resubmit</button>
+		</form>
+	{% endif %}
 {% endif %}
 
 <div class="column-holder">
 	<div class="column">
 		{% if not submission["repl_url"] %}
-			<form id="set-repl" method="POST" action="/setrepl">
-				<a href="https://repl.it/new" target="_blank">Create Repl</a>
-				<input type="text" name="repl_url" placeholder="Enter repl URL" required>
-				<input style="display: none;" name="class_id" value="{{class_id}}" readonly>
-				<input style="display: none;" name="assignment_id" value="{{assignment_id}}" readonly>
-				<div id="setrepl-response" class="error"></div>
-				<button type="submit">Submit</button>
-			</form>
-			<script src="/static/assignment.js"></script>
+			{% if type == "student" %}
+				<form id="set-repl" method="POST" action="/setrepl">
+					<a href="https://repl.it/new" target="_blank">Create Repl</a>
+					<input type="text" name="repl_url" placeholder="Enter repl URL" required>
+					<input style="display: none;" name="class_id" value="{{class_id}}" readonly>
+					<input style="display: none;" name="assignment_id" value="{{assignment_id}}" readonly>
+					<div id="setrepl-response" class="error"></div>
+					<button type="submit">Submit</button>
+				</form>
+				<script src="/static/assignment.js"></script>
+			{% else %}
+				<div id="no-repl">
+					No Repl Set Yet
+				</div>
+			{% endif %}
 		{% else %}
 			<iframe frameborder="0" width="100%" height="100%" src="{{submission['repl_url']}}?lite=true"></iframe>
 		{% endif %}
 	</div><!--
 
-	--><div class="resizer" id="resize"><div>|</div></div><!--
+--><div class="resizer" data-direction="horizontal"><div></div></div><!--
 
-	--><div class="column">
+--><div class="column">
 		<h3 id="assignment-name">{{assignment["name"]}}</h3>
-		<div id="instructions">
-			<h4 id="instructions-heading">Instructions: </h4>
-			{{assignment["instructions"]}}
+		<div class="row-holder">
+			<div id="instructions" class="row">
+				<h4 id="instructions-heading">Instructions: </h4>
+				{{assignment["instructions"]}}
+			</div>
+			{% if type == "teacher" or submission["feedback"] != None %}
+				<div class="resizer" data-direction="vertical"><div></div></div>
+				<div id="feedback" class="row">
+					<h4 id="feedback-heading">Feedback: </h4>
+					{% if type == "teacher" %}
+						{% if submission["status"] in ["awaiting feedback", "returned"] %}
+							<form method="POST" action="/sendfeedback">
+							<input style="display: none;" name="class_id" value="{{class_id}}" readonly>
+							<input style="display: none;" name="student_id" value="{{student_id}}" readonly>
+							<input style="display: none;" name="assignment_id" value="{{assignment_id}}" readonly>
+								<textarea placeholder="Enter feedback" name="feedback" required>{% if submission["feedback"] != None %}{{submission["feedback"]}}{% endif %}</textarea>
+								<button type="submit">Send Feedback</button>
+							</form>
+						{% elif submission["feedback"] != None %}
+							<p>{{submission["feedback"]}}</p>
+						{% else %}
+							<p>Student has not submitted yet</p>
+						{% endif %}
+					{% else %}
+						{{submission["feedback"]}}					
+					{% endif %}
+				</div>
+			{% endif %}
 		</div>
 	</div>
 </div>

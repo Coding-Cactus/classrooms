@@ -191,6 +191,6 @@ input[type="file"]::before {
 	margin-top: var(--spacing-1);
 }
 
-#instructions {
+textarea#instructions {
 	height: 200px;
 }

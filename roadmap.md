@@ -15,10 +15,12 @@
     - [x] create code
   - [x] edit name, description, image
 - [x] join class with code
-- [ ] assignments
+- [x] assignments
   - [x] create assignments
   - [x] view list of assignments
   - [x] embed repls in assignments
   - [x] submit assignments
-  - [ ] teacher stuff like marking and feedback
+  - [x] teacher stuff like marking and feedback
+- [ ] button to get to teacher page
+- [ ] buttons to go pack to page before
 - [ ] classroom templates

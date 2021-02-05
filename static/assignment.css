@@ -32,6 +32,67 @@ header h1 {
 	border-left: 1px solid #aaa;	
 }
 
+.row-holder {
+	display: flex;
+	flex-flow: column;
+	height: calc(100% - 47px);
+}
+
+.row-holder .row {
+	position: relative;
+	background-color: #fafafa;
+	border-bottom: 1px solid #aaa;
+	height: 50%;
+}
+
+.row-holder .row:last-of-type {
+	flex: 1 1 0%;
+	border-right: none;
+	border-top: 1px solid #aaa;	
+}
+
+.resizer {
+	background-color: white;
+	z-index: 9999999;
+}
+
+.resizer[data-direction="horizontal"] {
+	position: relative;
+	height: 100%;
+	width: 8px;
+	cursor: col-resize;
+}
+
+.resizer[data-direction="vertical"] {
+	position: relative;
+	width: 100%;
+	height: 8px;
+	cursor: row-resize;
+}
+
+.resizer[data-direction="horizontal"] div {
+	top: calc(50% + 7px);
+	left: calc(50% - 0.6px);
+	position: absolute;
+	height: 40px;
+	width: 1.2px;
+	background-color: #444444;
+	user-select: none;
+	border-radius: 100px;
+}
+
+
+.resizer[data-direction="vertical"] div {
+	left: calc(50% - 20px);
+	top: calc(50% - 0.6px);
+	position: absolute;
+	width: 40px;
+	height: 1.2px;
+	background-color: #444444;
+	user-select: none;
+	border-radius: 100px;
+}
+
 #assignment-name {
 	padding: 11px 0;
 	text-align: center;
@@ -39,21 +100,35 @@ header h1 {
 	box-shadow: 0 2px 3px #787870;
 }
 
-#instructions {
+#instructions, #feedback {
 	padding: var(--spacing-1);
+	overflow-y: auto;
 }
 
-#instructions-heading {
+#instructions-heading, #feedback-heading {
 	border-bottom: 1px solid #ccc;
 	margin-bottom: var(--spacing-1);
 }
 
-#set-repl {
+#feedback textarea {
+	margin-bottom: var(--spacing-1);
+}
+
+#set-repl{
 	position: absolute;
 	display: block;
 	width: 80%;
 	top: calc(50% - 57px);
 	left: 10%;
+}
+
+#no-repl {	
+	display: block;
+	width: fit-content;
+	margin-top: calc(50vh - 48px);
+	margin-left: auto;
+	margin-right: auto;
+	font-size: 30px;
 }
 
 #set-repl * {

@@ -603,7 +603,7 @@ def get_assignment(class_id, assignment_id):
 		if db["assignments"][assignment_id]["submissions"][user_id]["status"] == "not viewed":
 			db["assignments"][assignment_id]["submissions"][user_id]["status"] = "viewed"
 			db.save()
-		return render_template("assignment.html", user_id=user_id, classroom=db["classrooms"][class_id], assignment=db["assignments"][assignment_id], submission=db["assignments"][assignment_id]["submissions"][user_id], class_id=class_id, assignment_id=assignment_id)
+		return render_template("assignment.html", user_id=user_id, classroom=db["classrooms"][class_id], assignment=db["assignments"][assignment_id], submission=db["assignments"][assignment_id]["submissions"][user_id], class_id=class_id, assignment_id=assignment_id, type="student")
 	return abort(404)
 
 
@@ -684,7 +684,7 @@ def resubmit():
 	class_id = request.form.get("class_id", None)
 	assignment_id = request.form.get("assignment_id", None)
 
-	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["students"] or assignment_id not in db["classrooms"][class_id]["assignments"] or db["assignments"][assignment_id]["submissions"][user_id]["status"] != "sent back":
+	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["students"] or assignment_id not in db["classrooms"][class_id]["assignments"] or db["assignments"][assignment_id]["submissions"][user_id]["status"] != "returned":
 		return abort(404)
 
 	db["assignments"][assignment_id]["submissions"][user_id]["status"] = "awaiting feedback"
@@ -696,7 +696,42 @@ def resubmit():
 
 @app.route("/classroom/<class_id>/<assignment_id>/<student_id>")
 def view_students_submission(class_id, assignment_id, student_id):
-	return "not implemented yet :("
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+
+	if class_id not in db["classrooms"] or student_id not in db["classrooms"][class_id]["students"] or assignment_id not in db["classrooms"][class_id]["assignments"]:
+		return abort(404)
+
+	if user_id not in db["classrooms"][class_id]["teachers"]:
+		return abort(404)
+
+	return render_template("assignment.html", assignment=db["assignments"][assignment_id], submission=db["assignments"][assignment_id]["submissions"][student_id], class_id=class_id, assignment_id=assignment_id, student_id=student_id, classroom=db["classrooms"][class_id], type="teacher")
+
+
+@app.route("/sendfeedback", methods=["POST"])
+def sendfeedback():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+
+	class_id = request.form.get("class_id", None)
+	student_id = request.form.get("student_id", None)
+	assignment_id = request.form.get("assignment_id", None)
+	feedback = request.form.get("feedback", None)
+	
+
+	if class_id not in db["classrooms"] or student_id not in db["classrooms"][class_id]["students"] or assignment_id not in db["classrooms"][class_id]["assignments"] or  db["assignments"][assignment_id]["submissions"][student_id]["status"] not in ["awaiting feedback", "returned"]:
+		return abort(404)
+
+	if user_id not in db["classrooms"][class_id]["teachers"]:
+		return abort(404)
+
+	db["assignments"][assignment_id]["submissions"][student_id]["feedback"] = feedback
+	db["assignments"][assignment_id]["submissions"][student_id]["status"] = "returned"
+	db.save()
+
+	return redirect(f"{base_url}/classroom/{class_id}/{assignment_id}")
 
 
 
