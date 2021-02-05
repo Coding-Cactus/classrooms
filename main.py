@@ -109,7 +109,7 @@ def make_class():
 	if not classroom_pfp:
 		cloud_img_url = "https://res.cloudinary.com/codingcactus/image/upload/v1611481743/classrooms/repl_logo_p9bqek.png"
 	else:
-		filename = classroom_id + classroom_pfp.filename.split(".")[0]
+		filename = classroom_id + "." + classroom_pfp.filename.split(".")[1]
 		Image.open(classroom_pfp).save(filename)
 		r = cloudinary.uploader.upload(filename,
 			folder = "classrooms/",
@@ -188,7 +188,7 @@ def edit_class():
 	if not classroom_pfp:
 		cloud_img_url = db["classrooms"][classroom_id]["classroom_pfp_url"]
 	else:
-		filename = classroom_id + classroom_pfp.filename.split(".")[0]
+		filename = classroom_id + "." +  classroom_pfp.filename.split(".")[1]
 		Image.open(classroom_pfp).save(filename)
 		r = cloudinary.uploader.upload(filename,
 			folder = "classrooms/",
@@ -738,6 +738,7 @@ def sendfeedback():
 @app.route("/favicon.ico")
 def favicon():
 	return redirect("https://repl.it/public/images/favicon.ico")
+
 
 
 util.loop_refresh()
