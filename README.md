@@ -55,4 +55,4 @@ Once a student has submitted their assignment (shown as the `awaiting feedback` 
 
 ## More to come!
 
-You can view what else is planned in [roadmap.md](https://github.com/Coding-Cactus/classrooms/roadmap.md)
+You can view what else is planned in [roadmap.md](https://github.com/Coding-Cactus/classrooms/blob/master/roadmap.md)
