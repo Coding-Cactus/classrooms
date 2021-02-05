@@ -23,4 +23,6 @@
   - [x] teacher stuff like marking and feedback
 - [ ] button to get to teacher page
 - [ ] buttons to go pack to page before
+- [ ] delete classrooms and assignments
+- [ ] remove teachers and students from classrooms
 - [ ] classroom templates
