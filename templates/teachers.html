@@ -1,11 +1,18 @@
 {% extends "classroom_base.html" %}
 
 {% block main %}
+<div class="back-link"><a href="/classroom/{{classroomId}}">Classroom Page</a></div>
 
 <h2>Edit Classroom</h2>
 <button id="edit-class">Edit</button>
 <div id="edit-class-popup"></div>
 <script src="/static/make_class.js"></script>
+
+<h2>Create an Assignment</h2>
+<button id="make-assignment">Create</button>
+<div id="classroomId" style="display: none;">{{classroomId}}</div>
+<div id="make-assignment-popup"></div>
+<script src="/static/make_assignment.js"></script>
 
 
 

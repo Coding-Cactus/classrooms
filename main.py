@@ -599,7 +599,7 @@ def get_assignment(class_id, assignment_id):
 		return abort(404)
 
 	if user_id in db["classrooms"][class_id]["teachers"]:
-		return render_template("teacher_assignments_list.html", classroom=db["classrooms"][class_id], assignment=db["assignments"][assignment_id], users=db["users"], assignment_id=assignment_id)
+		return render_template("teacher_assignments_list.html", classroom=db["classrooms"][class_id], assignment=db["assignments"][assignment_id], users=db["users"], assignment_id=assignment_id, class_id=class_id)
 	if user_id in db["classrooms"][class_id]["students"]:
 		if db["assignments"][assignment_id]["submissions"][user_id]["status"] == "not viewed":
 			db["assignments"][assignment_id]["submissions"][user_id]["status"] = "viewed"

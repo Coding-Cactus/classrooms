@@ -1,6 +1,13 @@
 {% extends "classroom_base.html" %}
 
+{% block header %}
+<h2>{{classroom["name"]}}</h2>
+<h4>{{assignment["name"]}}</h4>
+{% endblock %}
+
 {% block main %}
+<div class="teacher-link"><a href="teachers">Teachers Page</a></div>
+<div class="back-link"><a href="/classroom/{{class_id}}">Classroom Page</a></div>
 
 <div id="student-assignments-list-container" class="table-container">
 	<table id="student-assignments-list">

@@ -6,6 +6,7 @@
 
 {% block main %}
 {% if type == "student" %}
+	<div class="back-link"><a href="/classroom/{{class_id}}">Classroom Page</a></div>
 	{% if submission["status"] == "in progress" %}
 		<form class="submit-assignment" method="POST" action="/submit">		
 			<input style="display: none;" name="class_id" value="{{class_id}}" readonly>
@@ -25,6 +26,8 @@
 			<button id="resubmit" type="submit">Resubmit</button>
 		</form>
 	{% endif %}
+{% else %}
+	<div class="back-link"><a href="/classroom/{{class_id}}/{{assignment_id}}">Assignment Page</a></div>
 {% endif %}
 
 <div class="column-holder">

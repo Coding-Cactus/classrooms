@@ -6,6 +6,14 @@ header h2 {
 	font-weight: var(--font-weight-light);
 }
 
+header h4 {
+	width: 100%;
+	background-color: var(--color-background-4);
+	text-align: center;
+	color: var(--foreground-1);
+	font-weight: var(--font-weight-light);
+}
+
 h2 {
 	padding: var(--spacing-1) 0;
 }
