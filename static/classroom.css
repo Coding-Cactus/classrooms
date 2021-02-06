@@ -93,3 +93,22 @@ table {
 #student-assignments-list {
 	width: 100%;
 }
+
+.assignment-num {
+	position: relative;
+}
+
+.hover-info {
+	display: none;
+	position: absolute;
+	top: 0;
+    left: 15px;
+	background-color: var(--color-background-3);	
+	box-shadow: 0 0 5px #777;;
+	color: #000;
+	border-radius: var(--border-radius-1);
+}
+
+a:hover .hover-info, a .hover-info:hover {
+	display: block;
+}

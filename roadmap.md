@@ -23,8 +23,8 @@
   - [x] teacher stuff like marking and feedback
 - [x] button to get to teacher page
 - [x] buttons to go back to page before
-- [ ] make assignment button on teachers page as well as main classroom page
-- [ ] make student overview section in teachers page better
+- [x] make assignment button on teachers page as well as main classroom page
+- [x] make student overview section in teachers page better
 - [ ] remove teachers and students from classrooms
 - [ ] delete classrooms and assignments
 - [ ] assignment modal answer
