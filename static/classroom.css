@@ -59,13 +59,16 @@ table {
 }
 
 .table-container, .multi-tables {
-	overflow-x: auto;
 	display: inline-block;
 	white-space: nowrap;
 }
 
-.multi-tables {
+.multi-tables {	
+	overflow-x: auto;
 	display: block;
+	margin: auto;
+	width: fit-content;
+	max-width: 100%;
 }
 
 #assignment-table tr:not(:first-of-type) {
@@ -111,4 +114,14 @@ table {
 
 a:hover .hover-info, a .hover-info:hover {
 	display: block;
+}
+
+.remove-student ion-icon, .remove-teacher ion-icon {
+	font-size: 30px;
+	cursor: pointer;
+	color: var(--color-foreground-2);
+}
+
+.remove-student ion-icon:hover, .remove-teacher ion-icon:hover {
+	color: var(--color-negative-1);
 }

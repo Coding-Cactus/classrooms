@@ -227,7 +227,7 @@ def classroom_settings(id):
 	user_id = str(user.id)
 
 	if id in db["users"][user_id]["classrooms"] and user_id in db["classrooms"][id]["teachers"]:
-		return render_template("teachers.html", classroom=db["classrooms"][id], classroomId=id, users=db["users"], assignments=db["assignments"])
+		return render_template("teachers.html", classroom=db["classrooms"][id], classroomId=id, users=db["users"], assignments=db["assignments"], user_id=user_id)
 	return abort(404)
 
 
@@ -538,6 +538,46 @@ def decline():
 
 	return "Success"
 
+
+@app.route("/removestudent", methods=["POST"])
+def removestudent():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+
+	class_id = request.form.get("class_id", None)
+	student_id = request.form.get("student_id", None)
+
+	if class_id not in db["classrooms"] or student_id not in db["classrooms"][class_id]["students"] or user_id not in db["classrooms"][class_id]["teachers"]:
+		return abort(404)
+
+	db["classrooms"][class_id]["students"].remove(student_id)
+	db["users"][student_id]["classrooms"].remove(class_id)
+
+	for assignment_id in db["classrooms"][class_id]["assignments"]:
+		del db["assignments"][assignment_id]["submissions"][student_id]
+	
+	db.save()
+
+	return "Success"
+
+@app.route("/removeteacher", methods=["POST"])
+def removeteacher():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+
+	class_id = request.form.get("class_id", None)
+	teacher_id = request.form.get("teacher_id", None)
+
+	if class_id not in db["classrooms"] or teacher_id not in db["classrooms"][class_id]["teachers"] or user_id != db["classrooms"][class_id]["owner_id"] or teacher_id == user_id:
+		return abort(404)
+
+	db["classrooms"][class_id]["teachers"].remove(teacher_id)
+	db["users"][teacher_id]["classrooms"].remove(class_id)	
+	db.save()
+
+	return "Success"
 
 
 @app.route("/getmakeassignmentform", methods=["POST"])

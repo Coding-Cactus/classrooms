@@ -26,11 +26,12 @@
 		<div class="table-container">
 			<table id="name-table">
 				<tr>
-					<th></th>
+					<th colspan="2"></th>
 					<th>Username</th>
 					<th>Name</th>
 				{% for student in classroom["students"] %}
 					<tr>
+						<td class="remove-student" data-id="{{student}}"><ion-icon name="close-outline"></ion-icon></td>
 						<td><a href="https://repl.it/@{{users[student]['username']}}"><img class="pfp" style="background-image:url({{users[student]['pfp']}})"></a></td>
 						<td><a href="https://repl.it/@{{users[student]['username']}}">{{users[student]["username"]}}</a></td>
 						<td>{{users[student]["first_name"]}} {{users[student]["last_name"]}}</td>
@@ -74,7 +75,7 @@
 
 <ul>
 	{% for teacher in classroom["teachers"] %}
-		<li><a href="https://repl.it/@{{users[teacher]['username']}}">{{users[teacher]['username']}}</a></li>
+		<li><a href="https://repl.it/@{{users[teacher]['username']}}">{{users[teacher]['username']}}</a>{% if user_id == classroom["owner_id"] and user_id != teacher %}<span class="remove-teacher" data-id="{{teacher}}"><ion-icon name="close-outline"></ion-icon></span>{% endif %}</li>
 	{% endfor %}
 </ul>
 
@@ -82,4 +83,5 @@
 
 {% block scripts %}
 <script src="/static/add_people.js"></script>
+<script src="/static/remove_people.js"></script>
 {% endblock %}

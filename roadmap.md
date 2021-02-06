@@ -25,7 +25,8 @@
 - [x] buttons to go back to page before
 - [x] make assignment button on teachers page as well as main classroom page
 - [x] make student overview section in teachers page better
-- [ ] remove teachers and students from classrooms
+- [x] remove teachers and students from classrooms
+- [ ] edit assignments
 - [ ] delete classrooms and assignments
 - [ ] assignment modal answer
 - [ ] classroom templates

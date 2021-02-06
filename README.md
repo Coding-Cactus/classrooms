@@ -30,6 +30,11 @@ The only way to join a classroom is through being invited. There are different a
 3. Invite code: Enter the  code on the landing page in the `Enter code` box
 
 
+## Removing people from your classroom
+
+Go to the teachers page and click the `X` next to the student or teacher that you wish to remove. Only the owner of the classroom can remove other teachers.
+
+
 ## Creating assignments
 
 Go to your classroom page (by either clicking on it from the landing page or just going to `/<classroom_id>`). Click the `Create` button and then enter the name and instructions. This will then show you the page where you can see the general overview of students progress in that assignment.
