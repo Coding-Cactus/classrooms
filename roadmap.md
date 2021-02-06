@@ -26,7 +26,7 @@
 - [x] make assignment button on teachers page as well as main classroom page
 - [x] make student overview section in teachers page better
 - [x] remove teachers and students from classrooms
-- [ ] edit assignments
+- [x] edit assignments
 - [ ] delete classrooms and assignments
 - [ ] assignment modal answer
 - [ ] classroom templates

@@ -41,6 +41,9 @@ function mmakeAssignment(type) {
 			}
 			data = new FormData(e.target)
 			data.append("classId", document.getElementById("classroomId").innerHTML);
+			if (type === "edit") {
+				data.append("assignmentId", document.getElementById("assignmentId").innerHTML);		
+			}
 			request.send(data);
 			e.preventDefault();
 		});
@@ -48,6 +51,9 @@ function mmakeAssignment(type) {
 	};
 	data = new FormData();
 	data.append("classId", document.getElementById("classroomId").innerHTML);
+	if (type === "edit") {
+		data.append("assignmentId", document.getElementById("assignmentId").innerHTML);		
+	}
 	request.send(data);
 }
 

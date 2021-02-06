@@ -13,7 +13,7 @@ Next on the [landing page](https://classrooms.codingcactus.repl.co) click the `C
 
 ## Inviting people to your classroom
 
-Once a classrooms is created, you will be taken to the teachers page for it. The teachers page is at `/<classroom_id>/teachers`. Here you have the buttons to edit the classroom info (name, description, etc.), add students, and add teachers. It also shows the overview of students and their progress throughout each assignment.
+Once a classrooms is created, you will be taken to the teachers page for it. The teachers page is at `/classroom/<classroom_id>/teachers`. Here you have the buttons to edit the classroom info (name, description, etc.), add students, and add teachers. It also shows the overview of students and their progress throughout each assignment.
 
 When you click the `Invite More` button for either students or teachers, it will present you with three options:
 
@@ -37,11 +37,16 @@ Go to the teachers page and click the `X` next to the student or teacher that yo
 
 ## Creating assignments
 
-Go to your classroom page (by either clicking on it from the landing page or just going to `/<classroom_id>`). Click the `Create` button and then enter the name and instructions. This will then show you the page where you can see the general overview of students progress in that assignment.
+Go to your classroom page (by either clicking on it from the landing page or just going to `/classroom/<classroom_id>`). Click the `Create` button and then enter the name and instructions. This will then show you the page where you can see the general overview of students progress in that assignment.
+
+
+## Editing Assignments
+
+When viewing the assignment (at `/classroom/<classroom_id>/<assignment_id>`) click the `Edit` button. This will present you with the form to edit your assignment name and instructions.
 
 ## Completing assignments
 
-Go to your classroom page (by either clicking on it from the landing page or just going to `/<classroom_id>`). You will see a list of assignments. Click on one that you wish to work on. You will need to then create a repl, and then enter it's url into the box asking for it (only once). This will then embed that repl into that page for you to work on. The Instructions will be on the right side.
+Go to your classroom page (by either clicking on it from the landing page or just going to `/classroom/<classroom_id>`). You will see a list of assignments. Click on one that you wish to work on. You will need to then create a repl, and then enter it's url into the box asking for it (only once). This will then embed that repl into that page for you to work on. The Instructions will be on the right side.
 
 ## Submitting assignments
 

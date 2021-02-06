@@ -629,6 +629,48 @@ def makeassignment():
 	return f"/classroom/{class_id}/{assignment_id}"
 
 
+@app.route("/geteditassignmentform", methods=["POST"])
+def geteditassignmentsform():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	class_id = request.form.get("classId", None)
+	assignment_id = request.form.get("assignmentId", None)
+
+	print(class_id)
+
+	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"] or assignment_id not in db["classrooms"][class_id]["assignments"]:
+		return abort(404)
+
+	return render_template("create_assignment.html", type="edit", name=db["assignments"][assignment_id]["name"], instructions=db["assignments"][assignment_id]["instructions"])
+
+
+@app.route("/editassignment", methods=["POST"])
+def editassignment():	
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	class_id = request.form.get("classId", None)
+	assignment_id = request.form.get("assignmentId", None)
+
+	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"] or assignment_id not in db["classrooms"][class_id]["assignments"]:
+		return abort(404)
+
+	name = request.form.get("name", None)
+	instructions = request.form.get("instructions", None)
+
+	if not name or len(name.replace(" ", "")) == 0:
+		return "Invalid Name"
+	if not instructions or len(instructions.replace(" ", "")) == 0:
+		return "Invalid Instructions"
+
+	db["assignments"][assignment_id]["name"] = name
+	db["assignments"][assignment_id]["instructions"] = instructions
+	db.save()
+
+	return f"/classroom/{class_id}/{assignment_id}"
+
+
 @app.route("/classroom/<class_id>/<assignment_id>")
 def get_assignment(class_id, assignment_id):
 	db.load()

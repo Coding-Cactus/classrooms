@@ -9,6 +9,13 @@
 <div class="teacher-link"><a href="teachers">Teachers Page</a></div>
 <div class="back-link"><a href="/classroom/{{class_id}}">Classroom Page</a></div>
 
+<h2>Edit Assignment</h2>
+<button id="edit-assignment">Edit</button>
+<div id="classroomId" style="display: none;">{{class_id}}</div>
+<div id="assignmentId" style="display: none;">{{assignment_id}}</div>
+<div id="edit-assignment-popup"></div>
+<script src="/static/make_assignment.js"></script>
+
 <div id="student-assignments-list-container" class="table-container">
 	<table id="student-assignments-list">
 		<tr>
