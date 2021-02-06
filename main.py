@@ -239,6 +239,7 @@ def getaddstudentsform():
 	class_id = request.form.get("classId", None)
 
 	if not class_id: return abort(404)
+	if class_id not in db["classrooms"]: return abort(404)
 	if user_id not in db["classrooms"][class_id]["teachers"]: return abort(404)
 
 	if not db["classrooms"][class_id]["studentInviteLink"]:
@@ -406,7 +407,7 @@ def invitestudent():
 	if student_id in db["classrooms"][class_id]["students"]:
 		return "User is already a student in this classroom"
 
-	if student_id in db["classrooms"][class_id]["teacher"]:
+	if student_id in db["classrooms"][class_id]["teachers"]:
 		return "User is already a teacher in this classroom"
 
 	db["users"][student_id]["classroomInvites"].append({
