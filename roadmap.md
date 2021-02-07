@@ -27,6 +27,6 @@
 - [x] make student overview section in teachers page better
 - [x] remove teachers and students from classrooms
 - [x] edit assignments
-- [ ] delete classrooms and assignments
+- [x] delete classrooms and assignments
 - [ ] assignment modal answer
 - [ ] classroom templates

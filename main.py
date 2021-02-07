@@ -249,7 +249,7 @@ def deleteclassroom():
 		db["users"][teacher_id]["classrooms"].remove(class_id)
 
 	for assignment_id in classroom["assignments"]:
-		del db["assignments"][class_id]
+		del db["assignments"][assignment_id]
 
 	if classroom["studentInviteLink"] != None:
 		del db["studentInviteLinks"][classroom["studentInviteLink"]]
@@ -755,6 +755,27 @@ def editassignment():
 	db.save()
 
 	return f"/classroom/{class_id}/{assignment_id}"
+
+
+
+@app.route("/deleteassignment", methods=["POST"])
+def deleteassignment():	
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+
+	class_id = request.form.get("class_id", None)
+	assignment_id = request.form.get("assignment_id", None)
+
+	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"] or assignment_id not in db["classrooms"][class_id]["assignments"]:
+		return abort(404)
+
+	db["classrooms"][class_id]["assignments"].remove(assignment_id)
+	del db["assignments"][assignment_id]
+
+	db.save()
+
+	return redirect(f"{base_url}/classroom/{class_id}")
 
 
 @app.route("/classroom/<class_id>/<assignment_id>")
