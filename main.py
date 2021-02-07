@@ -66,12 +66,25 @@ def landing():
 	
 	user_id = str(asyncio.run(client.get_user(user)).id)
 	db.load()
-	return render_template("landing.html", teacher=("teacher" in db["users"][user_id]["roles"]), allClassrooms=db["classrooms"], userClassrooms=db["users"][user_id]["classrooms"], users=db["users"], langs=util.langs, invites=db["users"][user_id]["classroomInvites"])
+	return render_template(
+		"landing.html",
+		langs=util.langs,
+		users=db["users"],
+		allClassrooms=db["classrooms"],
+		invites=db["users"][user_id]["classroomInvites"],
+		userClassrooms=db["users"][user_id]["classrooms"],
+		teacher="teacher" in db["users"][user_id]["roles"]
+	)
 
 
 @app.route("/getmakeclassform")
 def getmakeclassform():
-	return render_template("create_class.html", type="make", pfp_url="https://res.cloudinary.com/codingcactus/image/upload/v1611481743/classrooms/repl_logo_p9bqek.png", langs=util.langs)
+	return render_template(
+		"create_class.html",
+		type="make",
+		langs=util.langs,
+		pfp_url="https://res.cloudinary.com/codingcactus/image/upload/v1611481743/classrooms/repl_logo_p9bqek.png"
+	)
 
 
 @app.route("/makeclass", methods=["POST"])
@@ -156,7 +169,15 @@ def geteditclassform():
 
 	classroom = db["classrooms"][class_id]
 
-	return render_template("create_class.html", type="edit", name=classroom["name"], language=classroom["language"], description=classroom["description"], pfp_url=classroom["classroom_pfp_url"], langs=util.langs)
+	return render_template(
+		"create_class.html",
+		type="edit",
+		langs=util.langs,
+		name=classroom["name"],
+		language=classroom["language"],
+		description=classroom["description"],
+		pfp_url=classroom["classroom_pfp_url"]
+	)
 
 
 @app.route("/editclass", methods=["POST"])
@@ -216,7 +237,15 @@ def get_classroom(id):
 	user_id = str(user.id)
 
 	if id in db["users"][user_id]["classrooms"]:
-		return render_template("classroom.html", userId=user_id, teacher=(user_id in db["classrooms"][id]["teachers"]), classroomId=id, classroom=db["classrooms"][id], users=db["users"], assignments=db["assignments"])
+		return render_template(
+			"classroom.html",
+			userId=user_id,
+			classroomId=id,
+			users=db["users"],
+			assignments=db["assignments"],
+			classroom=db["classrooms"][id],
+			teacher=user_id in db["classrooms"][id]["teachers"]
+		)
 	return abort(404)
 
 
@@ -226,8 +255,15 @@ def classroom_settings(id):
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
 	user_id = str(user.id)
 
-	if id in db["users"][user_id]["classrooms"] and user_id in db["classrooms"][id]["teachers"]:
-		return render_template("teachers.html", classroom=db["classrooms"][id], classroomId=id, users=db["users"], assignments=db["assignments"], user_id=user_id)
+	if id in db["users"][user_id]["classrooms"]	and user_id in db["classrooms"][id]["teachers"]:
+		return render_template(
+			"teachers.html",
+			classroomId=id,
+			user_id=user_id,
+			users=db["users"],
+			assignments=db["assignments"],
+			classroom=db["classrooms"][id]
+		)
 	return abort(404)
 
 
@@ -262,7 +298,12 @@ def getaddstudentsform():
 	else:
 		inviteCode = db["classrooms"][class_id]["studentInviteCode"]
 
-	return render_template("add_people.html", type="student", inviteLink=inviteLink, inviteCode=inviteCode)
+	return render_template(
+		"add_people.html",
+		type="student",
+		inviteLink=inviteLink,
+		inviteCode=inviteCode
+	)
 
 
 @app.route("/getaddteachersform", methods=["POST"])
@@ -296,7 +337,12 @@ def getaddteachersform():
 	else:
 		inviteCode = db["classrooms"][class_id]["teacherInviteCode"]
 
-	return render_template("add_people.html", type="teacher", inviteLink=inviteLink, inviteCode=inviteCode)
+	return render_template(
+		"add_people.html",
+		type="teacher",
+		inviteLink=inviteLink,
+		inviteCode=inviteCode
+	)
 
 
 
@@ -642,7 +688,12 @@ def geteditassignmentsform():
 	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"] or assignment_id not in db["classrooms"][class_id]["assignments"]:
 		return abort(404)
 
-	return render_template("create_assignment.html", type="edit", name=db["assignments"][assignment_id]["name"], instructions=db["assignments"][assignment_id]["instructions"])
+	return render_template(
+		"create_assignment.html",
+		type="edit",
+		name=db["assignments"][assignment_id]["name"],
+		instructions=db["assignments"][assignment_id]["instructions"]
+	)
 
 
 @app.route("/editassignment", methods=["POST"])
@@ -681,12 +732,29 @@ def get_assignment(class_id, assignment_id):
 		return abort(404)
 
 	if user_id in db["classrooms"][class_id]["teachers"]:
-		return render_template("teacher_assignments_list.html", classroom=db["classrooms"][class_id], assignment=db["assignments"][assignment_id], users=db["users"], assignment_id=assignment_id, class_id=class_id)
+		return render_template(
+			"teacher_assignments_list.html",
+			users=db["users"],
+			class_id=class_id,
+			assignment_id=assignment_id,
+			classroom=db["classrooms"][class_id],
+			assignment=db["assignments"][assignment_id]
+		)
+
 	if user_id in db["classrooms"][class_id]["students"]:
 		if db["assignments"][assignment_id]["submissions"][user_id]["status"] == "not viewed":
 			db["assignments"][assignment_id]["submissions"][user_id]["status"] = "viewed"
 			db.save()
-		return render_template("assignment.html", user_id=user_id, classroom=db["classrooms"][class_id], assignment=db["assignments"][assignment_id], submission=db["assignments"][assignment_id]["submissions"][user_id], class_id=class_id, assignment_id=assignment_id, type="student")
+		return render_template(
+			"assignment.html",
+			type="student",
+			user_id=user_id,
+			class_id=class_id,
+			assignment_id=assignment_id,
+			classroom=db["classrooms"][class_id],
+			assignment=db["assignments"][assignment_id],
+			submission=db["assignments"][assignment_id]["submissions"][user_id]
+		)
 	return abort(404)
 
 
@@ -789,7 +857,16 @@ def view_students_submission(class_id, assignment_id, student_id):
 	if user_id not in db["classrooms"][class_id]["teachers"]:
 		return abort(404)
 
-	return render_template("assignment.html", assignment=db["assignments"][assignment_id], submission=db["assignments"][assignment_id]["submissions"][student_id], class_id=class_id, assignment_id=assignment_id, student_id=student_id, classroom=db["classrooms"][class_id], type="teacher")
+	return render_template(
+		"assignment.html",
+		type="teacher",
+		class_id=class_id,
+		student_id=student_id,
+		assignment_id=assignment_id,
+		classroom=db["classrooms"][class_id],
+		assignment=db["assignments"][assignment_id],
+		submission=db["assignments"][assignment_id]["submissions"][student_id]
+	)
 
 
 @app.route("/sendfeedback", methods=["POST"])
