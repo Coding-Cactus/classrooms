@@ -100,7 +100,7 @@ def make_class():
 	try: Image.open(classroom_pfp)
 	except: classroom_pfp = None
 
-	classroom_id = str(len(db["classrooms"]) + 1)
+	classroom_id = str(util.next_id(db["classrooms"]))
 	user = (asyncio.run(client.get_user(user)))
 	user_id = str(user.id)
 	user_username = user.name
@@ -228,6 +228,41 @@ def edit_class():
 	db.save()
 	
 	return f"/classroom/{classroom_id}/teachers"
+
+
+@app.route("/deleteclassroom", methods=["POST"])
+def deleteclassroom():	
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+
+	class_id = request.form.get("class_id", None)
+
+	if class_id not in db["classrooms"] or user_id != db["classrooms"][class_id]["owner_id"]:
+		return abort(404)
+
+	classroom = db["classrooms"][class_id]
+
+	for student_id in classroom["students"]:
+		db["users"][student_id]["classrooms"].remove(class_id)
+	for teacher_id in classroom["teachers"]:
+		db["users"][teacher_id]["classrooms"].remove(class_id)
+
+	for assignment_id in classroom["assignments"]:
+		del db["assignments"][class_id]
+
+	if classroom["studentInviteLink"] != None:
+		del db["studentInviteLinks"][classroom["studentInviteLink"]]
+		del db["teacherInviteLinks"][classroom["teacherInviteLink"]]
+	if classroom["teacherInviteLink"] != None:
+		del db["studentInviteCodes"][classroom["studentInviteCode"]]
+		del db["teacherInviteCodes"][classroom["teacherInviteCode"]]
+
+	del db["classrooms"][class_id]
+
+	db.save()
+
+	return redirect(base_url)
 
 
 @app.route("/classroom/<id>")
@@ -657,7 +692,7 @@ def makeassignment():
 	if not instructions or len(instructions.replace(" ", "")) == 0:
 		return "Invalid Instructions"
 
-	assignment_id = str(len(db["assignments"]) + 1)
+	assignment_id = str(util.next_id(db["assignments"]))
 	db["assignments"][assignment_id] = {
 		"name": name,
 		"instructions": instructions,
@@ -775,7 +810,7 @@ def setrepl():
 	if repl_url.lower().startswith("http://"):
 		repl_url = "https://" + repl_url[7:]
 	
-	if not repl_url.lower().startswith("https://repl.it/@" + db["users"][user_id]["name"].lower() + "/"):
+	if not repl_url.lower().startswith("https://repl.it/@" + db["users"][user_id]["username"].lower() + "/"):
 		return "Invalid repl url"
 	
 	if len(repl_url.lower()[8:].split("/")) != 3:
@@ -898,7 +933,6 @@ def sendfeedback():
 @app.route("/favicon.ico")
 def favicon():
 	return redirect("https://repl.it/public/images/favicon.ico")
-
 
 
 util.loop_refresh()

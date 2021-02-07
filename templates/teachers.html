@@ -79,6 +79,21 @@
 	{% endfor %}
 </ul>
 
+{% if user_id == classroom["owner_id"] %}
+	<h2>Delete Classroom</h2>
+	<form method="POST" action="/deleteclassroom" id="delete-classroom-form">
+		<input style="display: none;" name="class_id" value="{{classroomId}}" readonly>
+		<button type="submit" id="delete-classroom">Delete</button>
+	</form>
+	<script>
+		document.getElementById("delete-classroom-form").addEventListener("submit", (e) => {
+			if (!confirm("are you sure you want to delete this classroom?")) {
+				e.preventDefault();
+			}
+		})
+	</script>
+{% endif %}
+
 {% endblock %}
 
 {% block scripts %}

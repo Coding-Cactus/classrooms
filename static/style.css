@@ -111,7 +111,7 @@ input[type="file"]::-webkit-file-upload-button {
   	visibility: hidden;
 }
 
-button, input[type="file"]::before {
+button, input[type="file"]::before, #delete-classroom {
 	background-color: #f3f3f3;
 	border: 1px solid #e0e0e0;
 	color: #3485e4;
@@ -133,7 +133,7 @@ button, input[type="file"]::before {
 	visibility: visible;
 }
 
-button:hover, input[type="file"]:hover::before {
+button:hover, input[type="file"]:hover::before, #delete-classroom:hover {
 	background-color: #337ad1;
 	border: 1px solid #337ad1;
 	color: #ffffff;

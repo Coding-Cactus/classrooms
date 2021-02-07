@@ -39,7 +39,7 @@ async def refresh_user_info():
 	for user_id in db["users"]:
 		user = await client.get_user_by_id(int(user_id))
 		if str(user) != "None":
-			db["users"][user_id]["name"] = user.name
+			db["users"][user_id]["username"] = user.name
 			db["users"][user_id]["pfp"] = user.avatar
 			db["users"][user_id]["first_name"] = user.first_name
 			db["users"][user_id]["last_name"] = user.last_name
@@ -55,3 +55,10 @@ def loop_refresh():
 	t = threading.Timer(600, func_wrapper)
 	t.start()
 	return t
+
+def next_id(ids):
+	biggest = 0
+	for id in ids:
+		if (int(id)) > biggest:
+			biggest = int(id)
+	return biggest+1
