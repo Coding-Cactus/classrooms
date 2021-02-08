@@ -125,3 +125,7 @@ a:hover .hover-info, a .hover-info:hover {
 .remove-student ion-icon:hover, .remove-teacher ion-icon:hover {
 	color: var(--color-negative-1);
 }
+
+#modal-answer-repl-url-input {
+	width: 250px
+}

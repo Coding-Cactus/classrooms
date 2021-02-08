@@ -386,6 +386,8 @@ def invite(inviteLink):
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
 	user_id = str(user.id)
 
+	inviteLink = inviteLink.upper()
+
 	if inviteLink in db["studentInviteLinks"]:
 		class_id = db["studentInviteLinks"][inviteLink]
 		if user_id not in db["classrooms"][class_id]["teachers"]:
@@ -407,6 +409,7 @@ def invite(inviteLink):
 			if user_id not in db["classrooms"][class_id]["teachers"]:
 				db["classrooms"][class_id]["teachers"].append(user_id)
 				db["users"][user_id]["classrooms"].append(class_id)
+				db.save()
 			return redirect(f"{base_url}/classroom/{class_id}/teachers")
 
 	return abort(404)
@@ -695,6 +698,7 @@ def makeassignment():
 	db["assignments"][assignment_id] = {
 		"name": name,
 		"instructions": instructions,
+		"modal_answer_url": None,
 		"submissions": {}
 	}
 	for student_id in db["classrooms"][class_id]["students"]:
@@ -758,7 +762,7 @@ def editassignment():
 
 
 @app.route("/deleteassignment", methods=["POST"])
-def deleteassignment():	
+def deleteassignment():
 	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
 	user_id = str(user.id)
@@ -775,6 +779,39 @@ def deleteassignment():
 	db.save()
 
 	return redirect(f"{base_url}/classroom/{class_id}")
+
+
+@app.route("/setmodalanswer", methods=["POST"])
+def setmodalanswer():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+
+	class_id = request.form.get("class_id", None)
+	assignment_id = request.form.get("assignment_id", None)
+	repl_url = request.form.get("repl_url", None)
+
+	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"] or assignment_id not in db["classrooms"][class_id]["assignments"]:
+		return abort(404)
+
+	if not repl_url:
+		return "No repl provided"
+	
+	if repl_url.lower().startswith("http://"):
+		repl_url = "https://" + repl_url[7:]
+	
+	if not repl_url.lower().startswith("https://repl.it/@" + db["users"][user_id]["username"].lower() + "/"):
+		return "Invalid repl url"
+	
+	if len(repl_url.lower()[8:].split("/")) != 3:
+		return "Invalid repl url"
+
+	repl_url = repl_url.split("#")[0]
+
+	db["assignments"][assignment_id]["modal_answer_url"] = repl_url
+	db.save()
+	return "Success"
+
 
 
 @app.route("/classroom/<class_id>/<assignment_id>")

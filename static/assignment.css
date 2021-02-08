@@ -165,3 +165,10 @@ header h1 {
 #unsubmit:focus {
 	box-shadow: 0 0 0 3px var(--color-red-transparent-1);
 }
+
+#view-modal-answer {
+	position: absolute;
+	margin: 0;
+	top: var(--spacing-1);
+	right: 95px;
+}

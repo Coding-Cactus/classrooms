@@ -28,5 +28,5 @@
 - [x] remove teachers and students from classrooms
 - [x] edit assignments
 - [x] delete classrooms and assignments
-- [ ] assignment modal answer
+- [x] assignment modal answer
 - [ ] classroom templates

@@ -16,6 +16,23 @@
 <div id="edit-assignment-popup"></div>
 <script src="/static/make_assignment.js"></script>
 
+<h2>Set Modal Answer</h2>
+{% if assignment["modal_answer_url"] == None %}
+	<p>No modal answer set yet</p>
+{% else %}
+	<p>Modal answer repl url: <a href="{{assignment['modal_answer_url']}}">{{assignment["modal_answer_url"]}}</a></p>
+{% endif %}
+<form method="POST" action="/setmodalanswer" id="set-modal-answer-form">
+	<input style="display: none;" name="class_id" value="{{class_id}}" readonly>
+	<input style="display: none;" name="assignment_id" value="{{assignment_id}}" readonly>
+	<input type="text" id="modal-answer-repl-url-input" name="repl_url" placeholder="Repl URL" autocomplete="off" required>
+	<button type="submit" id="set-modal-answer" disabled>Set Repl</button>
+	<div class="error" id="set-modal-error"></div>
+</form>
+<script src="/static/modal_answer.js"></script>
+<script src="/static/repl_url.js"></script>
+<script>check("modal-answer-repl-url-input", "set-modal-answer");</script>
+
 <div id="student-assignments-list-container" class="table-container">
 	<table id="student-assignments-list">
 		<tr>
@@ -45,7 +62,7 @@
 		if (!confirm("are you sure you want to delete this assignment?")) {
 			e.preventDefault();
 		}
-	})
+	});
 </script>
 
 {% endblock %}
