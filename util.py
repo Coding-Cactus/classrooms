@@ -36,16 +36,28 @@ client = repltalk.Client()
 
 async def refresh_user_info():
 	db.load()
-	for user_id in db["users"]:
+	data = db["users"]
+	changedUsers = []
+
+	for user_id in data:
 		user = await client.get_user_by_id(int(user_id))
 		if str(user) != "None":
-			db["users"][user_id]["username"] = user.name
-			db["users"][user_id]["pfp"] = user.avatar
-			db["users"][user_id]["first_name"] = user.first_name
-			db["users"][user_id]["last_name"] = user.last_name
-			db["users"][user_id]["roles"] = parse_roles(user.roles)
-			db.save()
-		await asyncio.sleep(10)
+			changedUsers.append(user_id)
+			data[user_id]["username"] = user.name
+			data[user_id]["pfp"] = user.avatar
+			data[user_id]["first_name"] = user.first_name
+			data[user_id]["last_name"] = user.last_name
+			data[user_id]["roles"] = parse_roles(user.roles)
+			await asyncio.sleep(10)
+
+	db.load()
+	for user_id in changedUsers:
+		db["users"][user_id]["username"] = data[user_id]["username"]
+		db["users"][user_id]["pfp"] = data[user_id]["pfp"]
+		db["users"][user_id]["first_name"] = data[user_id]["first_name"]
+		db["users"][user_id]["last_name"] = data[user_id]["last_name"]
+		db["users"][user_id]["roles"] = data[user_id]["roles"]		
+	db.save()
 
 
 def loop_refresh():

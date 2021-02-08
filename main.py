@@ -61,11 +61,10 @@ def before_request():
 
 @app.route("/")
 def landing():
-	head = request.headers
-	user = util.verify_headers(head)
-	
-	user_id = str(asyncio.run(client.get_user(user)).id)
 	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	
 	return render_template(
 		"landing.html",
 		langs=util.langs,
@@ -434,7 +433,7 @@ def join():
 						"feedback": None
 					}
 				db.save()
-			return redirect(f"{base_url}/classroom/{class_id}")
+			return f"{base_url}/classroom/{class_id}"
 		return "You can't be a student and a teacher"
 
 	if inviteCode in db["teacherInviteCodes"] and "teacher" in util.parse_roles(user.roles):
@@ -444,7 +443,7 @@ def join():
 				db["classrooms"][class_id]["teachers"].append(user_id)
 				db["users"][user_id]["classrooms"].append(class_id)
 				db.save()
-			return redirect(f"{base_url}/classroom/{class_id}/teachers")
+			return f"{base_url}/classroom/{class_id}/teachers"
 		return "You can't be a student and a teacher"
 
 	return "Invalid Code"
@@ -948,7 +947,6 @@ def sendfeedback():
 	db.save()
 
 	return redirect(f"{base_url}/classroom/{class_id}/{assignment_id}")
-
 
 
 @app.route("/favicon.ico")

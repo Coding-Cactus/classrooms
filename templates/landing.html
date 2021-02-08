@@ -33,12 +33,14 @@
 			request.open("POST", "/join", true);
 			request.onload = function() {
 				response = request.responseText;
-				if (response.includes("Invalid")) {
-					e.preventDefault();
+				if (response.includes("Invalid") || response.includes("can't")) {
 					document.getElementById("join-error").innerHTML = response;
+				} else {
+					window.location.href = response;
 				}
 			}
 			request.send(new FormData(e.target));
+			e.preventDefault();
 		});
 	</script>
 </form>
