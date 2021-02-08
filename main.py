@@ -252,9 +252,9 @@ def deleteclassroom():
 
 	if classroom["studentInviteLink"] != None:
 		del db["studentInviteLinks"][classroom["studentInviteLink"]]
-		del db["teacherInviteLinks"][classroom["teacherInviteLink"]]
-	if classroom["teacherInviteLink"] != None:
 		del db["studentInviteCodes"][classroom["studentInviteCode"]]
+	if classroom["teacherInviteLink"] != None:
+		del db["teacherInviteLinks"][classroom["teacherInviteLink"]]
 		del db["teacherInviteCodes"][classroom["teacherInviteCode"]]
 
 	del db["classrooms"][class_id]
