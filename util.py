@@ -40,16 +40,19 @@ async def refresh_user_info():
 	changedUsers = []
 
 	for user_id in data:
-		user = await client.get_user_by_id(int(user_id))
-		if str(user) != "None":
-			changedUsers.append(user_id)
-			data[user_id]["username"] = user.name
-			data[user_id]["pfp"] = user.avatar
-			data[user_id]["first_name"] = user.first_name
-			data[user_id]["last_name"] = user.last_name
-			data[user_id]["roles"] = parse_roles(user.roles)
-			await asyncio.sleep(10)
-
+		try:
+			user = await client.get_user_by_id(int(user_id))
+			if str(user) != "None":
+				changedUsers.append(user_id)
+				data[user_id]["username"] = user.name
+				data[user_id]["pfp"] = user.avatar
+				data[user_id]["first_name"] = user.first_name
+				data[user_id]["last_name"] = user.last_name
+				data[user_id]["roles"] = parse_roles(user.roles)
+				await asyncio.sleep(10)
+		except TypeError:
+			continue
+			
 	db.load()
 	for user_id in changedUsers:
 		db["users"][user_id]["username"] = data[user_id]["username"]

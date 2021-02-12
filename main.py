@@ -122,7 +122,7 @@ def make_class():
 		cloud_img_url = "https://res.cloudinary.com/codingcactus/image/upload/v1611481743/classrooms/repl_logo_p9bqek.png"
 	else:
 		filename = classroom_id + "." + classroom_pfp.filename.split(".")[1]
-		Image.open(classroom_pfp).save(filename)
+		Image.open(classroom_pfp).convert("RGB").save(filename)
 		r = cloudinary.uploader.upload(filename,
 			folder = "classrooms/",
 			public_id = classroom_id,
@@ -209,7 +209,7 @@ def edit_class():
 		cloud_img_url = db["classrooms"][classroom_id]["classroom_pfp_url"]
 	else:
 		filename = classroom_id + "." +  classroom_pfp.filename.split(".")[1]
-		Image.open(classroom_pfp).save(filename)
+		Image.open(classroom_pfp).convert("RGB").save(filename)
 		r = cloudinary.uploader.upload(filename,
 			folder = "classrooms/",
 			public_id = classroom_id,
@@ -721,7 +721,6 @@ def geteditassignmentsform():
 	class_id = request.form.get("classId", None)
 	assignment_id = request.form.get("assignmentId", None)
 
-	print(class_id)
 
 	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"] or assignment_id not in db["classrooms"][class_id]["assignments"]:
 		return abort(404)
