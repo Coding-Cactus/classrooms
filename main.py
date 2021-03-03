@@ -180,7 +180,8 @@ def geteditclassform():
 
 
 @app.route("/editclass", methods=["POST"])
-def edit_class():
+def edit_class():	
+	db.load()
 	form = request.form
 	files = request.files
 	user = util.verify_headers(request.headers)
@@ -219,8 +220,6 @@ def edit_class():
 		cloud_img_url = r["url"].replace("http://", "https://")
 		os.remove(filename)
 
-	
-	db.load()
 	db["classrooms"][classroom_id]["name"] = name
 	db["classrooms"][classroom_id]["description"] = description
 	db["classrooms"][classroom_id]["classroom_pfp_url"] = cloud_img_url
@@ -799,7 +798,9 @@ def setmodalanswer():
 	if repl_url.lower().startswith("http://"):
 		repl_url = "https://" + repl_url[7:]
 	
-	if not repl_url.lower().startswith("https://repl.it/@" + db["users"][user_id]["username"].lower() + "/"):
+	if (not repl_url.lower().startswith("https://repl.it/@" + db["users"][user_id]["username"].lower() + "/") and
+		not repl_url.lower().startswith("https://replit.com/@" + db["users"][user_id]["username"].lower() + "/") 
+	):
 		return "Invalid repl url"
 	
 	if len(repl_url.lower()[8:].split("/")) != 3:
@@ -866,7 +867,9 @@ def setrepl():
 	if repl_url.lower().startswith("http://"):
 		repl_url = "https://" + repl_url[7:]
 	
-	if not repl_url.lower().startswith("https://repl.it/@" + db["users"][user_id]["username"].lower() + "/"):
+	if (not repl_url.lower().startswith("https://repl.it/@" + db["users"][user_id]["username"].lower() + "/") and
+		not repl_url.lower().startswith("https://replit.com/@" + db["users"][user_id]["username"].lower() + "/") 
+	):
 		return "Invalid repl url"
 	
 	if len(repl_url.lower()[8:].split("/")) != 3:
@@ -988,7 +991,6 @@ def sendfeedback():
 @app.route("/favicon.ico")
 def favicon():
 	return redirect("https://repl.it/public/images/favicon.ico")
-
 
 util.loop_refresh()
 app.run("0.0.0.0")
