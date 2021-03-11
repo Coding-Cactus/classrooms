@@ -29,4 +29,5 @@
 - [x] edit assignments
 - [x] delete classrooms and assignments
 - [x] assignment modal answer
+- [x] cloning classrooms
 - [ ] classroom templates

@@ -179,7 +179,7 @@ function makeClass(type) {
 				}
 			}
 			data = new FormData(e.target)
-			if ( type == "edit") {
+			if ( type === "edit" || type === "clone") {
 				data.append("classId", document.getElementById("classroomId").innerHTML);
 			}
 			request.send(data);
@@ -200,4 +200,5 @@ if (document.getElementById("make-class") !== null) {
 	document.getElementById("make-class").addEventListener("click", () => makeClass("make"));
 } else {
 	document.getElementById("edit-class").addEventListener("click", () => makeClass("edit"));
+	document.getElementById("clone-class").addEventListener("click", () => makeClass("clone"));
 }

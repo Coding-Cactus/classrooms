@@ -17,6 +17,10 @@ Next on the [landing page](https://classrooms.codingcactus.repl.co) click the `C
 When viewing the classroom's tecaher page (at `/classroom/<classroom_id>/teachers`) click the `Edit` button. This will present you with the form to edit your classroom name, description, and icon.
 
 
+## Cloning a Classroom
+
+When viewing the classroom's tecaher page (at `/classroom/<classroom_id>/teachers`) click the `Clone` button. This will present you with the form to clone your classroom. You can change the classroom name, description, and icon. Cloning a classroom will copy all the assignments over into a new classroom (with modal answers). Students (and their submissions) and teachers will not be transfered to the new classroom.
+
 ## Deleting a Classrrom
 
 When viewing the classroom's tecaher page (at `/classroom/<classroom_id>/teachers`) click the `Delete` button. Only the classroom owner can perform this action.

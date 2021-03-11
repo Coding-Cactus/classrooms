@@ -6,7 +6,6 @@
 <h2>Edit Classroom</h2>
 <button id="edit-class">Edit</button>
 <div id="edit-class-popup"></div>
-<script src="/static/make_class.js"></script>
 
 <h2>Create an Assignment</h2>
 <button id="make-assignment">Create</button>
@@ -79,6 +78,10 @@
 	{% endfor %}
 </ul>
 
+<h2>Clone Classroom</h2>
+<button id="clone-class">Clone</button>
+<div id="clone-class-popup"></div>
+
 {% if user_id == classroom["owner_id"] %}
 	<h2>Delete Classroom</h2>
 	<form method="POST" action="/deleteclassroom" id="delete-classroom-form">
@@ -97,6 +100,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="/static/make_class.js"></script>
 <script src="/static/add_people.js"></script>
 <script src="/static/remove_people.js"></script>
 {% endblock %}

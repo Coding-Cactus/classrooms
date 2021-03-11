@@ -78,7 +78,9 @@
 		<div class="row-holder">
 			<div id="instructions" class="row">
 				<h4 id="instructions-heading">Instructions: </h4>
-				{{assignment["instructions"]}}
+				<div style="white-space: pre-wrap">
+{{assignment["instructions"]}}
+				</div>
 			</div>
 			{% if type == "teacher" or submission["feedback"] != None %}
 				<div class="resizer" data-direction="vertical"><div></div></div>

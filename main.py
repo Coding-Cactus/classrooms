@@ -88,6 +88,7 @@ def getmakeclassform():
 
 @app.route("/makeclass", methods=["POST"])
 def make_class():
+	db.load()
 	form = request.form
 	files = request.files
 	user = util.verify_headers(request.headers)
@@ -133,7 +134,6 @@ def make_class():
 		os.remove(filename)
 
 	
-	db.load()
 	db["classrooms"][classroom_id] = {
 		"owner_id": user_id,
 		"owner_username": user_username,
@@ -223,6 +223,108 @@ def edit_class():
 	db["classrooms"][classroom_id]["name"] = name
 	db["classrooms"][classroom_id]["description"] = description
 	db["classrooms"][classroom_id]["classroom_pfp_url"] = cloud_img_url
+	db.save()
+	
+	return f"/classroom/{classroom_id}/teachers"
+
+@app.route("/getcloneclassform", methods=["POST"])
+def cloneform():
+	db.load()
+	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
+	user_id = str(user.id)
+	class_id = request.form.get("classId", None)
+
+	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"]:
+		return abort(404)
+
+	classroom = db["classrooms"][class_id]
+
+	return render_template(
+		"create_class.html",
+		type="clone",
+		langs=util.langs,
+		name=classroom["name"],
+		language=classroom["language"],
+		description=classroom["description"],
+		pfp_url=classroom["classroom_pfp_url"]
+	)
+
+
+@app.route("/cloneclass", methods=["POST"])
+def clone():
+	db.load()
+	form = request.form
+	files = request.files
+	user = util.verify_headers(request.headers)
+
+	clone_class_id = form.get("classId", None)
+	name = form.get("name", None)
+	description = form.get("description", None)
+	classroom_pfp = files.get("classroom-pfp", None)
+	try: Image.open(classroom_pfp)
+	except: classroom_pfp = None
+
+	classroom_id = str(util.next_id(db["classrooms"]))
+	user = (asyncio.run(client.get_user(user)))
+	user_id = str(user.id)
+	user_username = user.name
+	teacher = "teacher" in util.parse_roles(user.roles)
+
+	if not teacher or not clone_class_id: return abort(404)
+
+	if len(name.replace(" ", "")) == 0 or not name:
+		return "Invalid Name"
+	if classroom_pfp != None and not util.allowed_file(classroom_pfp.filename):
+		return "Invalid File Type"
+
+	clone_classroom = db["classrooms"][clone_class_id]
+	language = clone_classroom["language"]
+	
+	
+	if len(description.replace(" ", "")) == 0:
+		description = "A " + util.langs[language.lower()]["name"] + " classroom"
+
+
+	if not classroom_pfp:
+		cloud_img_url = cloud_img_url = db["classrooms"][clone_class_id]["classroom_pfp_url"]
+	else:
+		filename = classroom_id + "." + classroom_pfp.filename.split(".")[1]
+		Image.open(classroom_pfp).convert("RGB").save(filename)
+		r = cloudinary.uploader.upload(filename,
+			folder = "classrooms/",
+			public_id = classroom_id,
+			overwrite = True,
+			resource_type = "image"
+		)
+		cloud_img_url = r["url"].replace("http://", "https://")
+		os.remove(filename)
+	
+	assignments = []
+	for assignment_id in clone_classroom["assignments"]:
+		assignment = dict(db["assignments"][assignment_id])
+		assignment["submissions"] = {}
+		next_id = str(util.next_id(db["assignments"]))
+		db["assignments"][next_id] = assignment
+		db.save()
+		assignments.append(next_id)
+	
+	db["classrooms"][classroom_id] = {
+		"owner_id": user_id,
+		"owner_username": user_username,
+		"created": time.time(),
+		"name": name,
+		"language": language.lower(),
+		"description": description,
+		"classroom_pfp_url": cloud_img_url,
+		"teachers": [user_id],
+		"students": [],
+		"assignments": assignments,
+		"studentInviteLink": None,
+		"studentInviteCode": None,
+		"teacherInviteLink": None,
+		"teacherInviteCode": None
+	}
+	db["users"][user_id]["classrooms"].append(classroom_id)
 	db.save()
 	
 	return f"/classroom/{classroom_id}/teachers"
@@ -991,6 +1093,7 @@ def sendfeedback():
 @app.route("/favicon.ico")
 def favicon():
 	return redirect("https://repl.it/public/images/favicon.ico")
+
 
 util.loop_refresh()
 app.run("0.0.0.0")

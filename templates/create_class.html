@@ -14,7 +14,7 @@
 							<div class="language-selector">
 								<div class="input">
 									<div class="drop-wrap">
-										<input autocomplete="off" type="text" name="language" id="language-select" placeholder="Language" value="{{language}}" required>
+										<input autocomplete="off" type="text" name="language" id="language-select" placeholder="Language" value="{{language}}" {%if type=="make"%}required{%else%}disabled{%endif%}>
 										<ul class="dropdown" id="langs">
 											{% for lang in langs %}
 												<li data-langname="{{langs[lang]['name']}}"><img alt="{{langs[lang]['name']}}" src="{{langs[lang]['img']}}"><span class="text">{{langs[lang]['name']}}</span></li>
