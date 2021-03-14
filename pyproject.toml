@@ -9,7 +9,9 @@ python = "^3.8"
 flask = "^1.1.2"
 repltalk = "^0.8.17"
 cloudinary = "^1.24.0"
-easypydb = "^0.1"
+requests = "^2.25.1"
+dnspython = "^2.1.0"
+pymongo = "^3.11.3"
 
 [tool.poetry.dev-dependencies]
 

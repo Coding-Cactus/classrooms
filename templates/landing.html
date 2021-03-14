@@ -33,7 +33,7 @@
 			request.open("POST", "/join", true);
 			request.onload = function() {
 				response = request.responseText;
-				if (response.includes("Invalid") || response.includes("can't")) {
+				if (response.includes("Invalid") || response.includes("already")) {
 					document.getElementById("join-error").innerHTML = response;
 				} else {
 					window.location.href = response;
@@ -51,11 +51,11 @@
 		<div class="invite-card">
 			<div class="h-stack">
 				<div class="h-stack">
-					<a href="https://repl.it/@{{users[allClassrooms[invite['class_id']]['owner_id']]['username']}}"><img class="pfp" style="background-image:url({{users[allClassrooms[invite['class_id']]['owner_id']]['pfp']}})"></a>
-					<a class="username" href="https://repl.it/@{{users[allClassrooms[invite['class_id']]['owner_id']]['username']}}">{{users[allClassrooms[invite['class_id']]['owner_id']]['username']}}</a>
+					<a href="https://repl.it/@{{invite['owner_username']}}"><img class="pfp" style="background-image:url({{invite['owner_pfp']}})"></a>
+					<a class="username" href="https://repl.it/@{{invite['owner_username']}}">{{invite["owner_username"]}}</a>
 				</div>
 				<span>
-				has invited you to be a {{invite['type']}} in their classroom <b>{{allClassrooms[invite["class_id"]]["name"]}}</b></span>
+				has invited you to be a {{invite['type']}} in their classroom <b>{{invite["class_name"]}}</b></span>
 				<span data-type="{{invite['type']}}" data-classid="{{invite['class_id']}}" class="options-wrapper">
 					<ion-icon class="accept" name="checkmark-circle-outline"></ion-icon>
 					<ion-icon class="decline" name="close-circle-outline"></ion-icon>
@@ -93,22 +93,22 @@
 <div id="class-list">
 	{% for class in userClassrooms %}
 	<div class="card">
-		<a class="link-blanket" href="/classroom/{{class}}"></a>
-		<img class="image" src="{{allClassrooms[class]['classroom_pfp_url']}}">
+		<a class="link-blanket" href="/classroom/{{class['id']}}"></a>
+		<img class="image" src="{{class['classroom_pfp_url']}}">
 		<div class="content">
 			<div class="v-stack">
-				<h1 class="heading">{{allClassrooms[class]["name"]}}</h1>
+				<h1 class="heading">{{class["name"]}}</h1>
 				<div class="h-stack">
-					<a href="https://repl.it/@{{users[allClassrooms[class]['owner_id']]['username']}}"><img class="pfp" style="background-image:url({{users[allClassrooms[class]['owner_id']]['pfp']}})"></a>
-					<a class="username" href="https://repl.it/@{{users[allClassrooms[class]['owner_id']]['username']}}">{{users[allClassrooms[class]['owner_id']]['username']}}</a>
+					<a href="https://repl.it/@{{class['owner_username']}}"><img class="pfp" style="background-image:url({{class['owner_pfp']}})"></a>
+					<a class="username" href="https://repl.it/@{{class['owner_username']}}">{{class['owner_username']}}</a>
 				</div>
-				<div class="text" style="max-height: 50px;">{{allClassrooms[class]["description"]}}</div>
+				<div class="text" style="max-height: 50px;">{{class["description"]}}</div>
 				<div class="language">
 					<div class="h-stack">
 						<div class="lang-icon-wrapper">
-							<img class="lang-icon" src="{{langs[allClassrooms[class]['language']]['img']}}">
+							<img class="lang-icon" src="{{langs[class['language']]['img']}}">
 						</div>
-						<span class="text">{{langs[allClassrooms[class]['language']]['name']}}</span>
+						<span class="text">{{langs[class['language']]['name']}}</span>
 					</div>
 				</div>
 			</div>

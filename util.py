@@ -1,6 +1,8 @@
-import json, random, os, easypydb, repltalk, asyncio, threading
+import json, random, os, repltalk, asyncio, threading, pymongo
 
-db = easypydb.DB("db", os.getenv("dbToken"))
+myclient = pymongo.MongoClient(os.getenv("mongouri"))
+mydb = myclient["classrooms"]
+user_db = mydb["users"]
 
 def verify_headers(headers):
     name = headers.get("X-Replit-User-Name")
@@ -35,32 +37,20 @@ def randomstr(num):
 client = repltalk.Client()
 
 async def refresh_user_info():
-	db.load()
-	data = db["users"]
-	changedUsers = []
-
-	for user_id in data:
+	for db_user in user_db.find():
 		try:
-			user = await client.get_user_by_id(int(user_id))
+			user = await client.get_user_by_id(db_user["user_id"])
 			if str(user) != "None":
-				changedUsers.append(user_id)
-				data[user_id]["username"] = user.name
-				data[user_id]["pfp"] = user.avatar
-				data[user_id]["first_name"] = user.first_name
-				data[user_id]["last_name"] = user.last_name
-				data[user_id]["roles"] = parse_roles(user.roles)
+				user_db.update_one({"id": db_user["user_id"]}, {"$set": {
+					"username": user.name,
+					"pfp": user.avatar,
+					"first_name": user.first_name,
+					"last_name": user.last_name,
+					"roles": parse_roles(user.roles)
+				}})
 				await asyncio.sleep(10)
 		except TypeError:
 			continue
-			
-	db.load()
-	for user_id in changedUsers:
-		db["users"][user_id]["username"] = data[user_id]["username"]
-		db["users"][user_id]["pfp"] = data[user_id]["pfp"]
-		db["users"][user_id]["first_name"] = data[user_id]["first_name"]
-		db["users"][user_id]["last_name"] = data[user_id]["last_name"]
-		db["users"][user_id]["roles"] = data[user_id]["roles"]		
-	db.save()
 
 
 def loop_refresh():
@@ -74,6 +64,6 @@ def loop_refresh():
 def next_id(ids):
 	biggest = 0
 	for id in ids:
-		if (int(id)) > biggest:
-			biggest = int(id)
+		if id["id"] > biggest:
+			biggest = id["id"]
 	return biggest+1

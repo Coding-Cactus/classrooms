@@ -28,12 +28,12 @@
 					<th colspan="2"></th>
 					<th>Username</th>
 					<th>Name</th>
-				{% for student in classroom["students"] %}
+				{% for student in students %}
 					<tr>
-						<td class="remove-student" data-id="{{student}}"><ion-icon name="close-outline"></ion-icon></td>
-						<td><a href="https://repl.it/@{{users[student]['username']}}"><img class="pfp" style="background-image:url({{users[student]['pfp']}})"></a></td>
-						<td><a href="https://repl.it/@{{users[student]['username']}}">{{users[student]["username"]}}</a></td>
-						<td>{{users[student]["first_name"]}} {{users[student]["last_name"]}}</td>
+						<td class="remove-student" data-id="{{student['id']}}"><ion-icon name="close-outline"></ion-icon></td>
+						<td><a href="https://repl.it/@{{student['username']}}"><img class="pfp" style="background-image:url({{student['pfp']}})"></a></td>
+						<td><a href="https://repl.it/@{{student['username']}}">{{student["username"]}}</a></td>
+						<td>{{student["first_name"]}} {{student["last_name"]}}</td>
 					</tr>
 				{% endfor %}
 			</table>
@@ -44,18 +44,18 @@
 				<tr><th colspan="999999999">Assignments</th></tr>
 				<tr>
 					{% set count = namespace(value=1) %}
-					{% for assignment in classroom["assignments"] %}
-						<th><a class="assignment-num" href="{{assignment}}">
+					{% for assignment in assignments %}
+						<th><a class="assignment-num" href="{{assignment['id']}}">
 							{{count.value}}
-							<div class="hover-info">{{assignments[assignment]["name"]}}</div>
+							<div class="hover-info">{{assignment["name"]}}</div>
 						</a></th>
   						{% set count.value = count.value + 1 %}
 					{% endfor %}
-				</tr>			
-				{% for student in classroom["students"] %}
+				</tr>
+				{% for student in students %}
 					<tr>
-						{% for assignment in classroom["assignments"] %}
-							<td style="height: 69px;">{{assignments[assignment]["submissions"][student]["status"]}}</td>
+						{% for assignment in assignments %}
+							<td style="height: 69px;">{{assignment["submissions"][student["id"]|string]["status"]}}</td>
 						{% endfor %}
 					</tr>
 				{% endfor %}
@@ -73,8 +73,8 @@
 <div id="add-teachers-popup"></div>
 
 <ul>
-	{% for teacher in classroom["teachers"] %}
-		<li><a href="https://repl.it/@{{users[teacher]['username']}}">{{users[teacher]['username']}}</a>{% if user_id == classroom["owner_id"] and user_id != teacher %}<span class="remove-teacher" data-id="{{teacher}}"><ion-icon name="close-outline"></ion-icon></span>{% endif %}</li>
+	{% for teacher in teachers %}
+		<li><a href="https://repl.it/@{{teacher['username']}}">{{teacher['username']}}</a>{% if user_id == classroom["owner_id"] and user_id != teacher["id"] %}<span class="remove-teacher" data-id="{{teacher['id']}}"><ion-icon name="close-outline"></ion-icon></span>{% endif %}</li>
 	{% endfor %}
 </ul>
 

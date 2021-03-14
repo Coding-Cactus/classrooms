@@ -10,6 +10,7 @@ function makeClass(type) {
 		
 		if (type == "edit") {
 			document.getElementById("language-select").disabled = true;
+			document.getElementById("submit").disabled = false;
 		}
 
 		document.getElementById("cancel").addEventListener("click", (e) => {

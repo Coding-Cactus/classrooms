@@ -20,15 +20,15 @@
 			<th>Status</th>
 		{% endif %}
 	</tr>
-	{% for assignment in classroom["assignments"] %}
-			<tr class="clickeable" onclick="window.location='{{classroomId}}/{{assignment}}';">
-				{% if not teacher %}
-					<td>{{assignments[assignment]["name"]}}</td>
-					<td>{{assignments[assignment]["submissions"][userId]["status"]}}</td>
-				{% else %}
-					<td>{{assignments[assignment]["name"]}}</td>	
-				{% endif %}
-			</tr>
+	{% for assignment in assignments %}
+		<tr class="clickeable" onclick="window.location='{{classroomId}}/{{assignment['id']}}';">
+			{% if not teacher %}
+				<td>{{assignment["name"]}}</td>
+				<td>{{assignment["submissions"][userId|string]["status"]}}</td>
+			{% else %}
+				<td>{{assignment["name"]}}</td>	
+			{% endif %}
+		</tr>
 	{% endfor %}
 </table>
 

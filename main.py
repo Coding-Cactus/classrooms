@@ -6,11 +6,11 @@ import repltalk
 
 from PIL import Image
 
-from easypydb import DB
-
 import cloudinary
 import cloudinary.api
 import cloudinary.uploader
+
+from pymongo import MongoClient
 
 from flask import Flask
 from flask import abort
@@ -21,7 +21,13 @@ from flask import render_template
 
 client = repltalk.Client()
 
-db = DB("db", os.getenv("dbToken"))
+myclient = MongoClient(os.getenv("mongouri"))
+mydb = myclient["classrooms"]
+user_db = mydb["users"]
+classroom_db = mydb["classrooms"]
+assignment_db = mydb["assignments"]
+invitelinks_db = mydb["invitelinks"]
+invitecodes_db = mydb["invitecodes"]
 
 cloudinary.config(
 	cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
@@ -32,7 +38,7 @@ cloudinary.config(
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-base_url = "https://classrooms.codingcactus.repl.co"
+base_url = "https://classrooms-1.codingcactus.repl.co"
 
 
 @app.before_request
@@ -44,10 +50,10 @@ def before_request():
 	user = util.verify_headers(request.headers)
 	if user:
 		user = asyncio.run(client.get_user(user))
-		user_id = str(user.id)
-		db.load()
-		if user_id not in db["users"]:
-			db["users"][user_id] = {
+		user_id = user.id
+		if user_db.find_one({"id": user_id}) == None:
+			user_db.insert_one({
+				"id": user_id,
 				"username": user.name,
 				"pfp": user.avatar,
 				"first_name": user.first_name,
@@ -55,24 +61,22 @@ def before_request():
 				"roles": util.parse_roles(user.roles),
 				"classrooms": [],
 				"classroomInvites": []
-			}
-			db.save()
+			})
 
 
 @app.route("/")
 def landing():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user = user_db.find_one({"id": user.id})
 	
 	return render_template(
 		"landing.html",
 		langs=util.langs,
-		users=db["users"],
-		allClassrooms=db["classrooms"],
-		invites=db["users"][user_id]["classroomInvites"],
-		userClassrooms=db["users"][user_id]["classrooms"],
-		teacher="teacher" in db["users"][user_id]["roles"]
+		users=user_db.find(),
+		allClassrooms=list(classroom_db.find()),
+		invites=user["classroomInvites"],
+		userClassrooms=list(classroom_db.find({"id": {"$in": user["classrooms"]}})),
+		teacher="teacher" in user["roles"]
 	)
 
 
@@ -88,7 +92,6 @@ def getmakeclassform():
 
 @app.route("/makeclass", methods=["POST"])
 def make_class():
-	db.load()
 	form = request.form
 	files = request.files
 	user = util.verify_headers(request.headers)
@@ -100,10 +103,11 @@ def make_class():
 	try: Image.open(classroom_pfp)
 	except: classroom_pfp = None
 
-	classroom_id = str(util.next_id(db["classrooms"]))
-	user = (asyncio.run(client.get_user(user)))
-	user_id = str(user.id)
+	classroom_id = str(util.next_id(classroom_db.find()))
+	user = asyncio.run(client.get_user(user))
+	user_id = user.id
 	user_username = user.name
+	user_pfp = user.avatar
 	teacher = "teacher" in util.parse_roles(user.roles)
 
 	if not teacher: return abort(404)
@@ -134,9 +138,11 @@ def make_class():
 		os.remove(filename)
 
 	
-	db["classrooms"][classroom_id] = {
+	classroom_db.insert_one({
+		"id": int(classroom_id),
 		"owner_id": user_id,
 		"owner_username": user_username,
+		"owner_pfp": user_pfp,
 		"created": time.time(),
 		"name": name,
 		"language": language.lower(),
@@ -149,24 +155,22 @@ def make_class():
 		"studentInviteCode": None,
 		"teacherInviteLink": None,
 		"teacherInviteCode": None
-	}
-	db["users"][user_id]["classrooms"].append(classroom_id)
-	db.save()
+	})
+	user_db.update_one({"id": user_id}, {"$addToSet": {"classrooms": int(classroom_id)}})
 	
 	return f"/classroom/{classroom_id}/teachers"
 
 
 @app.route("/geteditclassform", methods=["POST"])
 def geteditclassform():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 	class_id = request.form.get("classId", None)
 
-	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"]:
-		return abort(404)
+	classroom = classroom_db.find_one({"id": int(class_id)})
 
-	classroom = db["classrooms"][class_id]
+	if classroom == None or user_id not in classroom["teachers"]:
+		return abort(404)
 
 	return render_template(
 		"create_class.html",
@@ -180,8 +184,7 @@ def geteditclassform():
 
 
 @app.route("/editclass", methods=["POST"])
-def edit_class():	
-	db.load()
+def edit_class():
 	form = request.form
 	files = request.files
 	user = util.verify_headers(request.headers)
@@ -194,20 +197,22 @@ def edit_class():
 	except: classroom_pfp = None
 
 	user = (asyncio.run(client.get_user(user)))
-	user_id = str(user.id)
+	user_id = user.id
+
+	classroom = classroom_db.find_one({"id": int(classroom_id)})
 
 	if len(name.replace(" ", "")) == 0 or not name:
 		return "Invalid Name"
-	if classroom_id not in db["classrooms"] or user_id not in db["classrooms"][classroom_id]["teachers"]:
+	if classroom == None or user_id not in classroom["teachers"]:
 		return abort(404)
 	if classroom_pfp != None and not util.allowed_file(classroom_pfp.filename):
 		return "Invalid File Type"
 	if len(description.replace(" ", "")) == 0:
-		description = "A " + util.langs[db["classrooms"][classroom_id]["language"]]["name"] + " classroom"
+		description = "A " + util.langs[classroom["language"]]["name"] + " classroom"
 
 
 	if not classroom_pfp:
-		cloud_img_url = db["classrooms"][classroom_id]["classroom_pfp_url"]
+		cloud_img_url = classroom["classroom_pfp_url"]
 	else:
 		filename = classroom_id + "." +  classroom_pfp.filename.split(".")[1]
 		Image.open(classroom_pfp).convert("RGB").save(filename)
@@ -220,24 +225,27 @@ def edit_class():
 		cloud_img_url = r["url"].replace("http://", "https://")
 		os.remove(filename)
 
-	db["classrooms"][classroom_id]["name"] = name
-	db["classrooms"][classroom_id]["description"] = description
-	db["classrooms"][classroom_id]["classroom_pfp_url"] = cloud_img_url
-	db.save()
+	classroom_db.update_one(
+		{ "id": int(classroom_id) },
+		{"$set": {
+			"name": name,
+			"description": description,
+			"classroom_pfp_url": cloud_img_url
+		}}
+	)
 	
 	return f"/classroom/{classroom_id}/teachers"
 
 @app.route("/getcloneclassform", methods=["POST"])
 def cloneform():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 	class_id = request.form.get("classId", None)
 
-	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"]:
-		return abort(404)
+	classroom = classroom_db.find_one({"id": int(class_id)})
 
-	classroom = db["classrooms"][class_id]
+	if classroom == None or user_id not in classroom["teachers"]:
+		return abort(404)
 
 	return render_template(
 		"create_class.html",
@@ -252,7 +260,6 @@ def cloneform():
 
 @app.route("/cloneclass", methods=["POST"])
 def clone():
-	db.load()
 	form = request.form
 	files = request.files
 	user = util.verify_headers(request.headers)
@@ -264,10 +271,11 @@ def clone():
 	try: Image.open(classroom_pfp)
 	except: classroom_pfp = None
 
-	classroom_id = str(util.next_id(db["classrooms"]))
+	classroom_id = str(util.next_id(classroom_db.find()))
 	user = (asyncio.run(client.get_user(user)))
-	user_id = str(user.id)
+	user_id = user.id
 	user_username = user.name
+	user_pfp = user.avatar
 	teacher = "teacher" in util.parse_roles(user.roles)
 
 	if not teacher or not clone_class_id: return abort(404)
@@ -277,7 +285,7 @@ def clone():
 	if classroom_pfp != None and not util.allowed_file(classroom_pfp.filename):
 		return "Invalid File Type"
 
-	clone_classroom = db["classrooms"][clone_class_id]
+	clone_classroom = classroom_db.find_one({"id": int(clone_class_id)})
 	language = clone_classroom["language"]
 	
 	
@@ -286,7 +294,7 @@ def clone():
 
 
 	if not classroom_pfp:
-		cloud_img_url = cloud_img_url = db["classrooms"][clone_class_id]["classroom_pfp_url"]
+		cloud_img_url = clone_classroom["classroom_pfp_url"]
 	else:
 		filename = classroom_id + "." + classroom_pfp.filename.split(".")[1]
 		Image.open(classroom_pfp).convert("RGB").save(filename)
@@ -300,17 +308,25 @@ def clone():
 		os.remove(filename)
 	
 	assignments = []
+	assignment_ids = []
+	next_id = util.next_id(assignment_db.find())
+	loops = 0
 	for assignment_id in clone_classroom["assignments"]:
-		assignment = dict(db["assignments"][assignment_id])
+		assignment = dict(assignment_db.find_one({"id": assignment_id}))
+		del assignment["_id"]
+		assignment["id"] = next_id + loops
 		assignment["submissions"] = {}
-		next_id = str(util.next_id(db["assignments"]))
-		db["assignments"][next_id] = assignment
-		db.save()
-		assignments.append(next_id)
+		assignments.append(assignment)
+		assignment_ids.append(next_id + loops)
+		loops += 1
 	
-	db["classrooms"][classroom_id] = {
+	assignment_db.insert_many(assignments)
+	
+	classroom_db.insert_one({
+		"id": int(classroom_id),
 		"owner_id": user_id,
 		"owner_username": user_username,
+		"owner_pfp": user_pfp,
 		"created": time.time(),
 		"name": name,
 		"language": language.lower(),
@@ -318,120 +334,118 @@ def clone():
 		"classroom_pfp_url": cloud_img_url,
 		"teachers": [user_id],
 		"students": [],
-		"assignments": assignments,
+		"assignments": assignment_ids,
 		"studentInviteLink": None,
 		"studentInviteCode": None,
 		"teacherInviteLink": None,
 		"teacherInviteCode": None
-	}
-	db["users"][user_id]["classrooms"].append(classroom_id)
-	db.save()
+	})
+	user_db.update_one({"id": user_id}, {"$addToSet": {"classrooms": int(classroom_id)}})
 	
 	return f"/classroom/{classroom_id}/teachers"
 
 
 @app.route("/deleteclassroom", methods=["POST"])
-def deleteclassroom():	
-	db.load()
+def deleteclassroom():
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 
 	class_id = request.form.get("class_id", None)
 
-	if class_id not in db["classrooms"] or user_id != db["classrooms"][class_id]["owner_id"]:
+	classroom = classroom_db.find_one({"id": int(class_id)})
+
+	if classroom == None or user_id != classroom["owner_id"]:
 		return abort(404)
 
-	classroom = db["classrooms"][class_id]
+	user_db.update_many({"id": {"$in": classroom["students"]}}, {"$pull": {"classrooms": int(class_id)}})
+	user_db.update_many({"id": {"$in": classroom["teachers"]}}, {"$pull": {"classrooms": int(class_id)}})
 
-	for student_id in classroom["students"]:
-		db["users"][student_id]["classrooms"].remove(class_id)
-	for teacher_id in classroom["teachers"]:
-		db["users"][teacher_id]["classrooms"].remove(class_id)
-
-	for assignment_id in classroom["assignments"]:
-		del db["assignments"][assignment_id]
+	assignment_db.delete_many({"id": {"$in": classroom["assignments"]}})
 
 	if classroom["studentInviteLink"] != None:
-		del db["studentInviteLinks"][classroom["studentInviteLink"]]
-		del db["studentInviteCodes"][classroom["studentInviteCode"]]
+		invitelinks_db.delete_one({"link": classroom["studentInviteLink"]})
+		invitecodes_db.delete_one({"code": classroom["studentInviteCode"]})
 	if classroom["teacherInviteLink"] != None:
-		del db["teacherInviteLinks"][classroom["teacherInviteLink"]]
-		del db["teacherInviteCodes"][classroom["teacherInviteCode"]]
+		invitelinks_db.delete_one({"link": classroom["teacherInviteLink"]})
+		invitecodes_db.delete_one({"code": classroom["teacherInviteCode"]})
 
-	del db["classrooms"][class_id]
+	classroom_db.delete_one({"id": int(class_id)})
 
-	db.save()
 
 	return redirect(base_url)
 
 
 @app.route("/classroom/<id>")
 def get_classroom(id):
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	id = int(id)
+	user_id = user.id
 
-	if id in db["users"][user_id]["classrooms"]:
+	classroom = classroom_db.find_one({"id": id})
+	assignments = assignment_db.find({"id": {"$in": classroom["assignments"]}})
+
+	if id in user_db.find_one({"id": user_id})["classrooms"]:
 		return render_template(
 			"classroom.html",
 			userId=user_id,
 			classroomId=id,
-			users=db["users"],
-			assignments=db["assignments"],
-			classroom=db["classrooms"][id],
-			teacher=user_id in db["classrooms"][id]["teachers"]
+			assignments=list(assignments),
+			classroom=classroom,
+			teacher=user_id in classroom["teachers"]
 		)
 	return abort(404)
 
 
 @app.route("/classroom/<id>/teachers")
 def classroom_settings(id):
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	id = int(id)
+	user_id = user.id
 
-	if id in db["users"][user_id]["classrooms"]	and user_id in db["classrooms"][id]["teachers"]:
+	classroom = classroom_db.find_one({"id": id})
+
+	if user_id in classroom["teachers"]:
 		return render_template(
 			"teachers.html",
 			classroomId=id,
 			user_id=user_id,
-			users=db["users"],
-			assignments=db["assignments"],
-			classroom=db["classrooms"][id]
+			students=list(user_db.find({"id": {"$in": classroom["students"]}})),
+			teachers=list(user_db.find({"id": {"$in": classroom["teachers"]}})),
+			assignments=list(assignment_db.find({"id": {"$in": classroom["assignments"]}})),
+			classroom=classroom
 		)
 	return abort(404)
 
 
 @app.route("/getaddstudentsform", methods=["POST"])
 def getaddstudentsform():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 	class_id = request.form.get("classId", None)
 
+	classroom = classroom_db.find_one({"id": int(class_id)})
+
 	if not class_id: return abort(404)
-	if class_id not in db["classrooms"]: return abort(404)
-	if user_id not in db["classrooms"][class_id]["teachers"]: return abort(404)
+	if classroom == None: return abort(404)
+	if user_id not in classroom["teachers"]: return abort(404)
 
-	if not db["classrooms"][class_id]["studentInviteLink"]:
+	if not classroom["studentInviteLink"]:
 		inviteLink = util.randomstr(15)
-		while inviteLink in db["studentInviteLinks"] or inviteLink in db["teacherInviteLinks"]:
+		while invitelinks_db.find_one({"link": inviteLink}) != None:
 			inviteLink = util.randomstr(15)
-		db["classrooms"][class_id]["studentInviteLink"] = inviteLink
-		db["studentInviteLinks"][inviteLink] = class_id
-		db.save()
+		classroom_db.update_one({"id": int(class_id)}, {"$set": {"studentInviteLink": inviteLink}})
+		invitelinks_db.insert_one({"link": inviteLink, "classroom": int(class_id), "type": "student"})
 	else:
-		inviteLink = db["classrooms"][class_id]["studentInviteLink"]
+		inviteLink = classroom["studentInviteLink"]
 
-	if not db["classrooms"][class_id]["studentInviteCode"]:
+	if not classroom["studentInviteCode"]:
 		inviteCode = util.randomstr(10)
-		while inviteCode in db["studentInviteCodes"]:
+		while invitecodes_db.find_one({"code": inviteCode}) != None:
 			inviteCode = util.randomstr(10)
-		db["classrooms"][class_id]["studentInviteCode"] = inviteCode
-		db["studentInviteCodes"][inviteCode] = class_id
-		db.save()
+		classroom_db.update_one({"id": int(class_id)}, {"$set": {"studentInviteCode": inviteCode}})
+		invitecodes_db.insert_one({"code": inviteCode, "classroom": int(class_id), "type": "student"})
 	else:
-		inviteCode = db["classrooms"][class_id]["studentInviteCode"]
+		inviteCode = classroom["studentInviteCode"]
 
 	return render_template(
 		"add_people.html",
@@ -443,34 +457,33 @@ def getaddstudentsform():
 
 @app.route("/getaddteachersform", methods=["POST"])
 def getaddteachersform():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 	class_id = request.form.get("classId", None)
 
+	classroom = classroom_db.find_one({"id": int(class_id)})
+
 	if not class_id: return abort(404)
-	if class_id not in db["classrooms"]: return abort(404)
-	if user_id not in db["classrooms"][class_id]["teachers"]: return abort(404)
+	if classroom == None: return abort(404)
+	if user_id not in classroom["teachers"]: return abort(404)
 
-	if not db["classrooms"][class_id]["teacherInviteLink"]:
+	if not classroom["teacherInviteLink"]:
 		inviteLink = util.randomstr(15)
-		while inviteLink in db["teacherInviteLinks"] or inviteLink in db["studentInviteLinks"]:
+		while invitelinks_db.find_one({"link": inviteLink}):
 			inviteLink = util.randomstr(15)
-		db["classrooms"][class_id]["teacherInviteLink"] = inviteLink
-		db["teacherInviteLinks"][inviteLink] = class_id
-		db.save()
+		classroom_db.update_one({"id": int(class_id)}, {"$set": {"teacherInviteLink": inviteLink}})
+		invitelinks_db.insert_one({"link": inviteLink, "classroom": int(class_id), "type": "teacher"})
 	else:
-		inviteLink = db["classrooms"][class_id]["teacherInviteLink"]
+		inviteLink = classroom["teacherInviteLink"]
 
-	if not db["classrooms"][class_id]["teacherInviteCode"]:
+	if not classroom["teacherInviteCode"]:
 		inviteCode = util.randomstr(10)
-		while inviteCode in db["teacherInviteCodes"]:
+		while invitecodes_db.find_one({"code": inviteCode}):
 			inviteCode = util.randomstr(10)
-		db["classrooms"][class_id]["teacherInviteCode"] = inviteCode
-		db["teacherInviteCodes"][inviteCode] = class_id
-		db.save()
+		classroom_db.update_one({"id": int(class_id)}, {"$set": {"teacherInviteCode": inviteCode}})
+		invitecodes_db.insert_one({"code": inviteCode, "classroom": int(class_id), "type": "teacher"})
 	else:
-		inviteCode = db["classrooms"][class_id]["teacherInviteCode"]
+		inviteCode = classroom["teacherInviteCode"]
 
 	return render_template(
 		"add_people.html",
@@ -483,81 +496,73 @@ def getaddteachersform():
 
 @app.route("/invite/<inviteLink>")
 def invite(inviteLink):
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 
 	inviteLink = inviteLink.upper()
 
-	if inviteLink in db["studentInviteLinks"]:
-		class_id = db["studentInviteLinks"][inviteLink]
-		if user_id not in db["classrooms"][class_id]["teachers"]:
-			if user_id not in db["classrooms"][class_id]["students"]:
-				db["classrooms"][class_id]["students"].append(user_id)
-				db["users"][user_id]["classrooms"].append(class_id)
-				for assignment in db["classrooms"][class_id]["assignments"]:
-					db["assignments"][assignment]["submissions"][user_id] = {
+	link_doc = invitelinks_db.find_one(({"link": inviteLink}))
+
+	if link_doc != None:
+		class_id = link_doc["classroom"]
+		classroom = classroom_db.find_one({"id": class_id})
+		type = link_doc["type"]
+		if user_id not in classroom["teachers"] and user_id not in classroom["students"]:
+			classroom_db.update_one({"id": class_id}, {"$addToSet": {f"{type}s": user_id}})
+			print(user_db.update_one({"id": user_id}, {"$addToSet": {"classrooms": class_id}}))
+			if type == "student":
+				for assignment in assignment_db.find({"id": {"$in": classroom["assignments"]}}):
+					submissions = assignment["submissions"]
+					submissions[str(user_id)] = {
 						"status": "not viewed",
 						"repl_url": None,
 						"feedback": None
 					}
-				db.save()
-			return redirect(f"{base_url}/classroom/{class_id}")
-
-	if inviteLink in db["teacherInviteLinks"] and "teacher" in util.parse_roles(user.roles):
-		class_id = db["teacherInviteLinks"][inviteLink]
-		if user_id not in db["classrooms"][class_id]["students"]:
-			if user_id not in db["classrooms"][class_id]["teachers"]:
-				db["classrooms"][class_id]["teachers"].append(user_id)
-				db["users"][user_id]["classrooms"].append(class_id)
-				db.save()
-			return redirect(f"{base_url}/classroom/{class_id}/teachers")
+					assignment_db.update_one({"id": assignment["id"]}, {"$set": {"submissions": submissions}})
+		ext = ""
+		if type == "teacher": ext = "/teachers"
+		return redirect(f"{base_url}/classroom/{class_id}{ext}")
 
 	return abort(404)
 
 
 @app.route("/join", methods=["POST"])
 def join():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 
 	inviteCode = request.form.get("invite_code", "None").upper()
 
-	if inviteCode in db["studentInviteCodes"]:
-		class_id = db["studentInviteCodes"][inviteCode]
-		if user_id not in db["classrooms"][class_id]["teachers"]:
-			if user_id not in db["classrooms"][class_id]["students"]:
-				db["classrooms"][class_id]["students"].append(user_id)
-				db["users"][user_id]["classrooms"].append(class_id)
-				for assignment in db["classrooms"][class_id]["assignments"]:
-					db["assignments"][assignment]["submissions"][user_id] = {
+	code_doc = invitecodes_db.find_one({"code": inviteCode})
+
+	if code_doc != None:
+		class_id = code_doc["classroom"]
+		classroom = classroom_db.find_one({"id": class_id})
+		type = code_doc["type"]
+		if user_id not in classroom["teachers"] and user_id not in classroom["students"]:
+			classroom_db.update_one({"id": class_id}, {"$addToSet": {f"{type}s": user_id}})
+			user_db.update_one({"id": user_id}, {"$addToSet": {"classrooms": class_id}})
+			if type == "student":
+				for assignment in assignment_db.find({"id": {"$in": classroom["assignments"]}}):
+					submissions = assignment["submissions"]
+					submissions[str(user_id)] = {
 						"status": "not viewed",
 						"repl_url": None,
 						"feedback": None
 					}
-				db.save()
-			return f"{base_url}/classroom/{class_id}"
-		return "You can't be a student and a teacher"
-
-	if inviteCode in db["teacherInviteCodes"] and "teacher" in util.parse_roles(user.roles):
-		class_id = db["teacherInviteCodes"][inviteCode]
-		if user_id not in db["classrooms"][class_id]["students"]:
-			if user_id not in db["classrooms"][class_id]["teachers"]:
-				db["classrooms"][class_id]["teachers"].append(user_id)
-				db["users"][user_id]["classrooms"].append(class_id)
-				db.save()
-			return f"{base_url}/classroom/{class_id}/teachers"
-		return "You can't be a student and a teacher"
+					assignment_db.update_one({"id": assignment["id"]}, {"$set": {"submissions": submissions}})
+			ext = ""
+			if type == "teacher": ext = "/teachers"
+			return f"{base_url}/classroom/{class_id}{ext}"
+		return "You are already in this classroom"
 
 	return "Invalid Code"
 
 
 @app.route("/invitestudent", methods=["POST"])
 def invitestudent():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 	class_id = request.form.get("classId", None)
 
 	student = asyncio.run(client.get_user(request.form.get("username", "")))
@@ -565,13 +570,17 @@ def invitestudent():
 	if str(student) == "None":
 		return "User not found"
 
-	if not class_id or class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"]:
+	classroom = classroom_db.find_one({"id": int(class_id)})
+
+	if classroom == None or user_id not in classroom["teachers"]:
 		return abort(404)
 
-	student_id = str(student.id)
+	student_id = student.id
+	db_student = user_db.find_one({"id": student_id})
 
-	if student_id not in db["users"]:
-		db["users"][student_id] = {
+	if db_student == None:
+		student = {
+			"id": student_id,
 			"username": student.name,
 			"pfp": student.avatar,
 			"first_name": student.first_name,
@@ -580,34 +589,39 @@ def invitestudent():
 			"classrooms": [],
 			"classroomInvites": []
 		}
-		db.save()
+		user_db.insert_one(student)
+	else:
+		student = db_student
 	
 	if user_id == student_id:
 		return "You can't invite yourself"
 
-	if class_id in db["users"][student_id]["classroomInvites"]:
+	if int(class_id) in [i["class_id"] for i in student["classroomInvites"]]:
 		return "User has already been invited"
 
-	if student_id in db["classrooms"][class_id]["students"]:
+	if student_id in classroom["students"]:
 		return "User is already a student in this classroom"
 
-	if student_id in db["classrooms"][class_id]["teachers"]:
+	if student_id in classroom["teachers"]:
 		return "User is already a teacher in this classroom"
 
-	db["users"][student_id]["classroomInvites"].append({
-		"class_id": class_id,
-		"type": "student"
-	})
-	db.save()
+	owner = user_db.find_one({"id": classroom["owner_id"]})
+
+	user_db.update_one({"id": student_id}, {"$push": {"classroomInvites": {
+		"class_id": int(class_id),
+		"type": "student",
+		"class_name": classroom["name"],
+		"owner_username": owner["username"],
+		"owner_pfp": owner["pfp"]
+	}}})
 
 	return "User has been invited"
 
 
 @app.route("/inviteteacher", methods=["POST"])
 def inviteteacher():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 	class_id = request.form.get("classId", None)
 
 	teacher = asyncio.run(client.get_user(request.form.get("username", "")))
@@ -615,13 +629,17 @@ def inviteteacher():
 	if str(teacher) == "None":
 		return "User not found"
 
-	if not class_id or class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"]:
+	classroom = classroom_db.find_one({"id": int(class_id)})
+
+	if classroom == None or user_id not in classroom["teachers"]:
 		return abort(404)
 
-	teacher_id = str(teacher.id)
+	teacher_id = teacher.id
+	db_teacher = user_db.find_one({"id": teacher_id})
 
-	if teacher_id not in db["users"]:
-		db["users"][teacher_id] = {
+	if db_teacher == None:
+		teacher = {
+			"id": teacher_id,
 			"username": teacher.name,
 			"pfp": teacher.avatar,
 			"first_name": teacher.first_name,
@@ -630,94 +648,104 @@ def inviteteacher():
 			"classrooms": [],
 			"classroomInvites": []
 		}
-		db.save()
+		user_db.insert_one(teacher)
+	else:
+		teacher = db_teacher
 	
 	if user_id == teacher_id:
 		return "You can't invite yourself"
 
-	if "teacher" not in db["users"][teacher_id]["roles"]:
+	if "teacher" not in teacher["roles"]:
 		return "User is not a teacher"
 
-	if class_id in db["users"][teacher_id]["classroomInvites"]:
+	if int(class_id) in [i["class_id"] for i in teacher["classroomInvites"]]:
 		return "User has already been invited"
 
-	if teacher_id in db["classrooms"][class_id]["students"]:
+	if teacher_id in classroom["students"]:
 		return "User is already a student in this classroom"
 
-	if teacher_id in db["classrooms"][class_id]["teachers"]:
+	if teacher_id in classroom["teachers"]:
 		return "User is already a teacher in this classroom"
+		
+	owner = user_db.find_one({"id": classroom["owner_id"]})
 
-	db["users"][teacher_id]["classroomInvites"].append({
-		"class_id": class_id,
-		"type": "teacher"
-	})
-	db.save()
+	user_db.update_one({"id": teacher_id}, {"$push": {"classroomInvites": {
+		"class_id": int(class_id),
+		"type": "teacher",
+		"class_name": classroom["name"],
+		"owner_username": owner["username"],
+		"owner_pfp": owner["pfp"]
+	}}})
 
 	return "User has been invited"
 
 
 @app.route("/acceptinvite", methods=["POST"])
 def accept():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 	class_id = request.form.get("classId", None)
 	inviteType = request.form.get("type", None)
 
 	if not inviteType:
 		return abort(404)
 
-	if not class_id or class_id not in db["classrooms"] or user_id in db["classrooms"][class_id][inviteType+"s"]:
+	classroom = classroom_db.find_one({"id": int(class_id)})
+
+	if classroom == None or user_id in classroom[inviteType+"s"]:
 		return abort(404)
 	
-	
-	found = False
-	for invite in db["users"][user_id]["classroomInvites"]:
-		if class_id == invite["class_id"]:
-			db["users"][user_id]["classroomInvites"].remove(invite)
-			found = True
-			break
+	user = user_db.find_one({"id": user_id})
 
-	if not found:
+	if int(class_id) in [i["class_id"] for i in user["classroomInvites"]]:
+		newInvites = []
+		for i in user["classroomInvites"]:
+			if i["class_id"] != int(class_id):
+				newInvites.append(i)
+		user_db.update_one({"id": user_id}, {"$set": {"classroomInvites": newInvites}})
+	else:
 		return abort(404)
 
-	db["classrooms"][class_id][inviteType+"s"].append(user_id)
-	db["users"][user_id]["classrooms"].append(class_id)
+	classroom_db.update_one({"id": int(class_id)}, {"$push": {f"{inviteType}s": user_id}})
+	user_db.update_one({"id": user_id}, {"$push": {"classrooms": int(class_id)}})
+
 	if inviteType == "student":
-		for assignment in db["classrooms"][class_id]["assignments"]:
-			db["assignments"][assignment]["submissions"][user_id] = {
+		for assignment in assignment_db.find({"id": {"$in": classroom["assignments"]}}):
+			submissions = assignment["submissions"]
+			submissions[str(user_id)] = {
 				"status": "not viewed",
 				"repl_url": None,
 				"feedback": None
 			}
-	db.save()
+			assignment_db.update_one({"id": assignment["id"]}, {"$set": {"submissions": submissions}})
 
 	return "Success"
 
 
 @app.route("/declineinvite", methods=["POST"])
 def decline():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 	class_id = request.form.get("classId", None)
 	inviteType = request.form.get("type", None)
 
 	if not inviteType:
 		return abort(404)
 
-	if not class_id or class_id not in db["classrooms"] or user_id in db["classrooms"][class_id][inviteType+"s"]:
+	classroom = classroom_db.find_one({"id": int(class_id)})
+
+	if classroom == None or user_id in classroom[inviteType+"s"]:
 		return abort(404)
 	
-	found = False
-	for invite in db["users"][user_id]["classroomInvites"]:
-		if class_id == invite["class_id"]:
-			db["users"][user_id]["classroomInvites"].remove(invite)
-			found = True
-			break		
-	db.save()
+	user = user_db.find_one({"id": user_id})
 
-	if not found:
+	if int(class_id) in user["classroomInvites"]:
+		newInvites = []
+		for i in user["classroomInvites"]:
+			if i["class_id"] != int(class_id):
+				newInvites.append(i)
+		user_db.update_one({"id": user_id}, {"$set": {"classroomInvites": newInvites}})
+	else:
 		return abort(404)
 
 	return "Success"
@@ -725,66 +753,69 @@ def decline():
 
 @app.route("/removestudent", methods=["POST"])
 def removestudent():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 
 	class_id = request.form.get("class_id", None)
 	student_id = request.form.get("student_id", None)
 
-	if class_id not in db["classrooms"] or student_id not in db["classrooms"][class_id]["students"] or user_id not in db["classrooms"][class_id]["teachers"]:
+	classroom = classroom_db.find_one({"id": int(class_id)})
+
+	if classroom == None or int(student_id) not in classroom["students"] or user_id not in classroom["teachers"]:
 		return abort(404)
 
-	db["classrooms"][class_id]["students"].remove(student_id)
-	db["users"][student_id]["classrooms"].remove(class_id)
+	classroom_db.update_one({"id": int(class_id)}, {"$pull": {"students": int(student_id)}})
+	user_db.update_one({"id": int(student_id)}, {"$pull": {"classrooms": int(class_id)}})
 
-	for assignment_id in db["classrooms"][class_id]["assignments"]:
-		del db["assignments"][assignment_id]["submissions"][student_id]
+	for assignment_id in classroom["assignments"]:
+		assignment = assignment_db.find_one({"id": assignment_id})
+		del assignment["submissions"][student_id]
+		assignment_db.update_one({"id": assignment_id}, {"$set": {"submissions": assignment["submissions"]}})
 	
-	db.save()
-
 	return "Success"
 
 @app.route("/removeteacher", methods=["POST"])
 def removeteacher():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 
 	class_id = request.form.get("class_id", None)
 	teacher_id = request.form.get("teacher_id", None)
 
-	if class_id not in db["classrooms"] or teacher_id not in db["classrooms"][class_id]["teachers"] or user_id != db["classrooms"][class_id]["owner_id"] or teacher_id == user_id:
+	classroom = classroom_db.find_one({"id": int(class_id)})
+
+	if classroom == None or teacher_id not in classroom["teachers"] or user_id != classroom["owner_id"] or int(teacher_id) == user_id:
 		return abort(404)
 
-	db["classrooms"][class_id]["teachers"].remove(teacher_id)
-	db["users"][teacher_id]["classrooms"].remove(class_id)	
-	db.save()
+	classroom_db.update_one({"id": int(class_id)}, {"$pull": {"teachers": int(teacher_id)}})
+	user_db.update_one({"id": int(teacher_id)}, {"$pull": {"classrooms": int(class_id)}})
 
 	return "Success"
 
 
 @app.route("/getmakeassignmentform", methods=["POST"])
 def getmakeassignmentsform():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 	class_id = request.form.get("classId", None)
 
-	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"]:
+	classroom = classroom_db.find_one({"id": int(class_id)})
+
+	if classroom == None or user_id not in classroom["teachers"]:
 		return abort(404)
 
 	return render_template("create_assignment.html", type="make")
 
 
 @app.route("/makeassignment", methods=["POST"])
-def makeassignment():	
-	db.load()
+def makeassignment():
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 	class_id = request.form.get("classId", None)
 
-	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"]:
+	classroom = classroom_db.find_one({"id": int(class_id)})
+
+	if classroom == None or user_id not in classroom["teachers"]:
 		return abort(404)
 
 	name = request.form.get("name", None)
@@ -795,54 +826,58 @@ def makeassignment():
 	if not instructions or len(instructions.replace(" ", "")) == 0:
 		return "Invalid Instructions"
 
-	assignment_id = str(util.next_id(db["assignments"]))
-	db["assignments"][assignment_id] = {
-		"name": name,
-		"instructions": instructions,
-		"modal_answer_url": None,
-		"submissions": {}
-	}
-	for student_id in db["classrooms"][class_id]["students"]:
-		db["assignments"][assignment_id]["submissions"][student_id] = {
+	submissions = {}
+	for student_id in classroom["students"]:
+		submissions[str(student_id)] = {
 			"status": "not viewed",
 			"repl_url": None,
 			"feedback": None
-		}		
-	db["classrooms"][class_id]["assignments"].append(assignment_id)
-	db.save()
+		}
+	assignment_id = util.next_id(assignment_db.find())
+	assignment_db.insert_one({
+		"id": assignment_id,
+		"name": name,
+		"instructions": instructions,
+		"modal_answer_url": None,
+		"submissions": submissions
+	})
+	classroom_db.update_one({"id": int(class_id)}, {"$push": {"assignments": assignment_id}})
 
 	return f"/classroom/{class_id}/{assignment_id}"
 
 
 @app.route("/geteditassignmentform", methods=["POST"])
 def geteditassignmentsform():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 	class_id = request.form.get("classId", None)
 	assignment_id = request.form.get("assignmentId", None)
 
+	classroom = classroom_db.find_one({"id": int(class_id)})
 
-	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"] or assignment_id not in db["classrooms"][class_id]["assignments"]:
+	if classroom == None or user_id not in classroom["teachers"] or int(assignment_id) not in classroom["assignments"]:
 		return abort(404)
+
+	assignment = assignment_db.find_one({"id": int(assignment_id)})
 
 	return render_template(
 		"create_assignment.html",
 		type="edit",
-		name=db["assignments"][assignment_id]["name"],
-		instructions=db["assignments"][assignment_id]["instructions"]
+		name=assignment["name"],
+		instructions=assignment["instructions"]
 	)
 
 
 @app.route("/editassignment", methods=["POST"])
-def editassignment():	
-	db.load()
+def editassignment():
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 	class_id = request.form.get("classId", None)
 	assignment_id = request.form.get("assignmentId", None)
 
-	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"] or assignment_id not in db["classrooms"][class_id]["assignments"]:
+	classroom = classroom_db.find_one({"id": int(class_id)})
+
+	if classroom == None or user_id not in classroom["teachers"] or int(assignment_id) not in classroom["assignments"]:
 		return abort(404)
 
 	name = request.form.get("name", None)
@@ -853,9 +888,7 @@ def editassignment():
 	if not instructions or len(instructions.replace(" ", "")) == 0:
 		return "Invalid Instructions"
 
-	db["assignments"][assignment_id]["name"] = name
-	db["assignments"][assignment_id]["instructions"] = instructions
-	db.save()
+	assignment_db.update_one({"id": int(assignment_id)}, {"$set": {"name": name, "instructions": instructions}})
 
 	return f"/classroom/{class_id}/{assignment_id}"
 
@@ -863,35 +896,33 @@ def editassignment():
 
 @app.route("/deleteassignment", methods=["POST"])
 def deleteassignment():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
-
+	user_id = user.id
 	class_id = request.form.get("class_id", None)
 	assignment_id = request.form.get("assignment_id", None)
 
-	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"] or assignment_id not in db["classrooms"][class_id]["assignments"]:
+	classroom = classroom_db.find_one({"id": int(class_id)})
+
+	if classroom == None or user_id not in classroom["teachers"] or int(assignment_id) not in classroom["assignments"]:
 		return abort(404)
 
-	db["classrooms"][class_id]["assignments"].remove(assignment_id)
-	del db["assignments"][assignment_id]
-
-	db.save()
+	classroom_db.update_one({"id": int(class_id)}, {"$pull": {"assignments": int(assignment_id)}})
+	assignment_db.delete_one({"id": int(assignment_id)})
 
 	return redirect(f"{base_url}/classroom/{class_id}")
 
 
 @app.route("/setmodalanswer", methods=["POST"])
 def setmodalanswer():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
-
+	user_id = user.id
 	class_id = request.form.get("class_id", None)
 	assignment_id = request.form.get("assignment_id", None)
 	repl_url = request.form.get("repl_url", None)
 
-	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["teachers"] or assignment_id not in db["classrooms"][class_id]["assignments"]:
+	classroom = classroom_db.find_one({"id": int(class_id)})
+
+	if classroom == None or user_id not in classroom["teachers"] or int(assignment_id) not in classroom["assignments"]:
 		return abort(404)
 
 	if not repl_url:
@@ -899,9 +930,11 @@ def setmodalanswer():
 	
 	if repl_url.lower().startswith("http://"):
 		repl_url = "https://" + repl_url[7:]
+
+	user = user_db.find_one({"id": user_id})
 	
-	if (not repl_url.lower().startswith("https://repl.it/@" + db["users"][user_id]["username"].lower() + "/") and
-		not repl_url.lower().startswith("https://replit.com/@" + db["users"][user_id]["username"].lower() + "/") 
+	if (not repl_url.lower().startswith("https://repl.it/@" + user["username"].lower() + "/") and
+		not repl_url.lower().startswith("https://replit.com/@" + user["username"].lower() + "/") 
 	):
 		return "Invalid repl url"
 	
@@ -910,57 +943,62 @@ def setmodalanswer():
 
 	repl_url = repl_url.split("#")[0]
 
-	db["assignments"][assignment_id]["modal_answer_url"] = repl_url
-	db.save()
+	assignment_db.update_one({"id": int(assignment_id)}, {"$set": {"modal_answer_url": repl_url}})
 	return "Success"
 
 
 
 @app.route("/classroom/<class_id>/<assignment_id>")
 def get_assignment(class_id, assignment_id):
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 
-	if class_id not in db["classrooms"] or assignment_id not in db["classrooms"][class_id]["assignments"]:
+	classroom = classroom_db.find_one({"id": int(class_id)})
+
+	if classroom == None or int(assignment_id) not in classroom["assignments"]:
 		return abort(404)
 
-	if user_id in db["classrooms"][class_id]["teachers"]:
+	if user_id in classroom["teachers"]:
 		return render_template(
 			"teacher_assignments_list.html",
-			users=db["users"],
+			students=user_db.find({"id": {"$in": classroom["students"]}}),
 			class_id=class_id,
 			assignment_id=assignment_id,
-			classroom=db["classrooms"][class_id],
-			assignment=db["assignments"][assignment_id]
+			classroom=classroom,
+			assignment=assignment_db.find_one({"id": int(assignment_id)})
 		)
 
-	if user_id in db["classrooms"][class_id]["students"]:
-		if db["assignments"][assignment_id]["submissions"][user_id]["status"] == "not viewed":
-			db["assignments"][assignment_id]["submissions"][user_id]["status"] = "viewed"
-			db.save()
+	if user_id in classroom["students"]:
+		assignment = assignment_db.find_one({"id": int(assignment_id)})
+		if assignment["submissions"][str(user_id)]["status"] == "not viewed":
+			submissions = assignment["submissions"]
+			submissions[str(user_id)]["status"] = "viewed"
+			assignment_db.update_one({"id": int(assignment_id)}, {"$set": {"submissions": submissions}})
 		return render_template(
 			"assignment.html",
 			type="student",
 			user_id=user_id,
 			class_id=class_id,
 			assignment_id=assignment_id,
-			classroom=db["classrooms"][class_id],
-			assignment=db["assignments"][assignment_id],
-			submission=db["assignments"][assignment_id]["submissions"][user_id]
+			classroom=classroom,
+			assignment=assignment,
+			submission=assignment["submissions"][str(user_id)]
 		)
 	return abort(404)
 
 
 @app.route("/setrepl", methods=["POST"])
 def setrepl():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 	repl_url = request.form.get("repl_url", None)
 	class_id = request.form.get("class_id", None)
 	assignment_id = request.form.get("assignment_id", None)
-	if class_id not in db["classrooms"] or assignment_id not in db["classrooms"][class_id]["assignments"] or user_id not in db["classrooms"][class_id]["students"] or db["assignments"][assignment_id]["submissions"][user_id]["repl_url"] != None:
+
+	classroom = classroom_db.find_one({"id": int(class_id)})
+	assignment = assignment_db.find_one({"id": int(assignment_id)})
+
+	if classroom == None or int(assignment_id) not in classroom["assignments"] or user_id not in classroom["students"] or assignment["submissions"][str(user_id)]["repl_url"] != None:
 		return "Invalid"
 
 	if not repl_url:
@@ -968,9 +1006,11 @@ def setrepl():
 	
 	if repl_url.lower().startswith("http://"):
 		repl_url = "https://" + repl_url[7:]
+
+	user = user_db.find_one({"id": user_id})
 	
-	if (not repl_url.lower().startswith("https://repl.it/@" + db["users"][user_id]["username"].lower() + "/") and
-		not repl_url.lower().startswith("https://replit.com/@" + db["users"][user_id]["username"].lower() + "/") 
+	if (not repl_url.lower().startswith("https://repl.it/@" + user["username"].lower() + "/") and
+		not repl_url.lower().startswith("https://replit.com/@" + user["username"].lower() + "/") 
 	):
 		return "Invalid repl url"
 	
@@ -979,9 +1019,10 @@ def setrepl():
 
 	repl_url = repl_url.split("#")[0]
 
-	db["assignments"][assignment_id]["submissions"][user_id]["repl_url"] = repl_url
-	db["assignments"][assignment_id]["submissions"][user_id]["status"] = "in progress"
-	db.save()
+	submissions = assignment["submissions"]
+	submissions[str(user_id)]["repl_url"] = repl_url
+	submissions[str(user_id)]["status"] = "in progress"
+	assignment_db.update_one({"id": int(assignment_id)}, {"$set": {"submissions": submissions}})
 
 	return "Success"
 
@@ -989,53 +1030,61 @@ def setrepl():
 
 @app.route("/submit", methods=["POST"])
 def submit():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
-	
+	user_id = user.id	
 	class_id = request.form.get("class_id", None)
 	assignment_id = request.form.get("assignment_id", None)
 
-	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["students"] or assignment_id not in db["classrooms"][class_id]["assignments"] or db["assignments"][assignment_id]["submissions"][user_id]["status"] != "in progress":
+	classroom = classroom_db.find_one({"id": int(class_id)})
+	assignment = assignment_db.find_one({"id": int(assignment_id)})
+
+	if classroom == None or user_id not in classroom["students"] or int(assignment_id) not in classroom["assignments"] or assignment["submissions"][str(user_id)]["status"] != "in progress":
 		return abort(404)
 
-	db["assignments"][assignment_id]["submissions"][user_id]["status"] = "awaiting feedback"
-	db.save()
+	submissions = assignment["submissions"]
+	submissions[str(user_id)]["status"] = "awaiting feedback"
+	assignment_db.update_one({"id": int(assignment_id)}, {"$set": {"submissions": submissions}})
 
 	return redirect(f"{base_url}/classroom/{class_id}")
 	
 	
 @app.route("/unsubmit", methods=["POST"])
 def unsubmit():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 	
 	class_id = request.form.get("class_id", None)
 	assignment_id = request.form.get("assignment_id", None)
 
-	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["students"] or assignment_id not in db["classrooms"][class_id]["assignments"] or db["assignments"][assignment_id]["submissions"][user_id]["status"] != "awaiting feedback":
+	classroom = classroom_db.find_one({"id": int(class_id)})
+	assignment = assignment_db.find_one({"id": int(assignment_id)})
+
+	if classroom == None or user_id not in classroom["students"] or int(assignment_id) not in classroom["assignments"] or assignment["submissions"][user_id]["status"] != "awaiting feedback":
 		return abort(404)
 
-	db["assignments"][assignment_id]["submissions"][user_id]["status"] = "in progress"
-	db.save()
+	submissions = assignment["submissions"]
+	submissions[str(user_id)]["status"] = "in progress"
+	assignment_db.update_one({"id": int(assignment_id)}, {"$set": {"submissions": submissions}})
 
 	return redirect(f"{base_url}/classroom/{class_id}")
 
 @app.route("/resubmit", methods=["POST"])
 def resubmit():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 	
 	class_id = request.form.get("class_id", None)
 	assignment_id = request.form.get("assignment_id", None)
 
-	if class_id not in db["classrooms"] or user_id not in db["classrooms"][class_id]["students"] or assignment_id not in db["classrooms"][class_id]["assignments"] or db["assignments"][assignment_id]["submissions"][user_id]["status"] != "returned":
+	classroom = classroom_db.find_one({"id": int(class_id)})
+	assignment = assignment_db.find_one({"id": int(assignment_id)})
+
+	if classroom == None or user_id not in classroom["students"] or int(assignment_id) not in classroom["assignments"] or assignment["submissions"][user_id]["status"] != "returned":
 		return abort(404)
 
-	db["assignments"][assignment_id]["submissions"][user_id]["status"] = "awaiting feedback"
-	db.save()
+	submissions = assignment["submissions"]
+	submissions[str(user_id)]["status"] = "awaiting feedback"
+	assignment_db.update_one({"id": int(assignment_id)}, {"$set": {"submissions": submissions}})
 
 	return redirect(f"{base_url}/classroom/{class_id}")
 
@@ -1043,49 +1092,54 @@ def resubmit():
 
 @app.route("/classroom/<class_id>/<assignment_id>/<student_id>")
 def view_students_submission(class_id, assignment_id, student_id):
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 
-	if class_id not in db["classrooms"] or student_id not in db["classrooms"][class_id]["students"] or assignment_id not in db["classrooms"][class_id]["assignments"]:
+	classroom = classroom_db.find_one({"id": int(class_id)})
+
+	if classroom == None or int(student_id) not in classroom["students"] or int(assignment_id) not in classroom["assignments"]:
 		return abort(404)
 
-	if user_id not in db["classrooms"][class_id]["teachers"]:
+	if user_id not in classroom["teachers"]:
 		return abort(404)
+
+	assignment = assignment_db.find_one({"id": int(assignment_id)})
 
 	return render_template(
 		"assignment.html",
 		type="teacher",
-		class_id=class_id,
-		student_id=student_id,
-		assignment_id=assignment_id,
-		classroom=db["classrooms"][class_id],
-		assignment=db["assignments"][assignment_id],
-		submission=db["assignments"][assignment_id]["submissions"][student_id]
+		class_id=int(class_id),
+		student_id=int(student_id),
+		assignment_id=int(assignment_id),
+		classroom=classroom,
+		assignment=assignment,
+		submission=assignment["submissions"][str(student_id)]
 	)
 
 
 @app.route("/sendfeedback", methods=["POST"])
 def sendfeedback():
-	db.load()
 	user = asyncio.run(client.get_user(util.verify_headers(request.headers)))
-	user_id = str(user.id)
+	user_id = user.id
 
 	class_id = request.form.get("class_id", None)
 	student_id = request.form.get("student_id", None)
 	assignment_id = request.form.get("assignment_id", None)
 	feedback = request.form.get("feedback", None)
-	
 
-	if class_id not in db["classrooms"] or student_id not in db["classrooms"][class_id]["students"] or assignment_id not in db["classrooms"][class_id]["assignments"] or  db["assignments"][assignment_id]["submissions"][student_id]["status"] not in ["awaiting feedback", "returned"]:
+	classroom = classroom_db.find_one({"id": int(class_id)})
+	assignment = assignment_db.find_one({"id": int(assignment_id)})	
+
+	if classroom == None or int(student_id) not in classroom["students"] or int(assignment_id) not in classroom["assignments"] or assignment["submissions"][str(student_id)]["status"] not in ["awaiting feedback", "returned"]:
 		return abort(404)
 
-	if user_id not in db["classrooms"][class_id]["teachers"]:
+	if user_id not in classroom["teachers"]:
 		return abort(404)
 
-	db["assignments"][assignment_id]["submissions"][student_id]["feedback"] = feedback
-	db["assignments"][assignment_id]["submissions"][student_id]["status"] = "returned"
-	db.save()
+	submissions = assignment["submissions"]
+	submissions[str(student_id)]["feedback"] = feedback
+	submissions[str(student_id)]["status"] = "returned"
+	assignment_db.update_one({"id": int(assignment_id)}, {"$set": {"submissions": submissions}})
 
 	return redirect(f"{base_url}/classroom/{class_id}/{assignment_id}")
 
