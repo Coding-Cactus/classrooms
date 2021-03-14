@@ -38,7 +38,7 @@ cloudinary.config(
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-base_url = "https://classrooms-1.codingcactus.repl.co"
+base_url = "https://classrooms.codingcactus.repl.co"
 
 
 @app.before_request
