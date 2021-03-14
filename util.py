@@ -41,7 +41,7 @@ async def refresh_user_info():
 		try:
 			user = await client.get_user_by_id(db_user["user_id"])
 			if str(user) != "None":
-				user_db.update_one({"id": db_user["user_id"]}, {"$set": {
+				user_db.update_one({"id": db_user["id"]}, {"$set": {
 					"username": user.name,
 					"pfp": user.avatar,
 					"first_name": user.first_name,
