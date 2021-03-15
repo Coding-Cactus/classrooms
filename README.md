@@ -87,6 +87,66 @@ When viewing the assignment overview, you can click on a student, and it will ta
 Once a student has submitted their assignment (shown as the `awaiting feedback` status), you will be able to give feedback on it by clicking the student in the assignment overview page, and writing your feedback in the bottom right box and then click the `Send feedback` button. You can edit this feedback by simply editing what you have written in the box and clicking the `Send feedback` button again.
 
 
+
+# Hosting yourself
+If you really want to host a clone of this rather than using https://classrooms.codingcactus.repl.co you will need 4 things.
+
+1. [Repl.it](https://repl.it) account
+2. [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) account
+3. [Cloudinary](https://cloudinary.com) account
+4. [Uptime Robot](https://uptimerobot.com) account (or any pinging service)
+
+This will cover everything assuming that you have never used any of the services. So if you have already got accounts etc. then you will be able to skip a few steps.
+
+#### Repl.it
+- Sign up at https://repl.it/signup
+- Click this: [![Run on Repl.it](https://repl.it/badge/github/Coding-Cactus/classrooms)](https://repl.it/github/Coding-Cactus/classrooms)
+- Put `python main.py` in the empty box in the top right
+- Press the Done button in the box that appears on the top right quarter of the screen
+- Create a file clalled exactly `.env`
+
+#### MongoDB Atlas
+- Sign up at https://account.mongodb.com/account/register
+- Create a new project
+- Create a cluster
+  - Choose a plan that you want (free plan will work fine)
+  - Leave the settings as they are
+  - Click create cluster
+- Click the Database Access button in the sidebar
+- Add a new database user
+  - Give it a name
+  - Give it a password
+  - Copy the password
+  - Give it the Atlas Admin role
+  - Add User
+- Go back to the clusters page
+- Click connect
+- Click Allow access from anywhere
+- CLick Add IP Address
+- Add the database user that you just created
+- Click Choose Connection Method
+- Click the bottom option
+- Copy the url from part 2
+- Add `mongouri=yoururl` to the `.env` file in your repl, but replace `yoururl` with the url from the previous step. Replace the `<password>` with the password of the database user (from earlier)
+
+
+
+### Cloudinary
+- Sign up at https://cloudinary.com/users/register/free
+- Look at the account details section at the top of the dahsboard page
+- Add `CLOUDINARY_CLOUD_NAME=abcdef` to the `.env` file in your repl, but replace `abcdef` with your cloudinary cloud name
+- Add `CLOUDINARY_API_KEY=1234546` to the `.env` file in your repl, but replace `123456` with your cloudinary api key
+- Add `CLOUDINARY_API_SECRET=asdf` to the `.env` file in your repl, but replace `asdf` with your cloudinary api secret
+
+
+### Uptime Robot
+- Sign up at https://uptimerobot.com/signUp
+- Add a http moniter pointing at the repl.co url for your repl (`https://replname.username.repl.co`)
+
+
+Press the run button on your repl
+
+
 ## More to come!
 
 You can view what else is planned in [roadmap.md](https://github.com/Coding-Cactus/classrooms/blob/master/roadmap.md)
