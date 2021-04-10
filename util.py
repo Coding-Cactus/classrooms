@@ -39,9 +39,10 @@ client = repltalk.Client()
 async def refresh_user_info():
 	for db_user in user_db.find():
 		try:
-			user = await client.get_user_by_id(db_user["id"])
+			id = db_user["id"]
+			user = await client.get_user_by_id(id)
 			if str(user) != "None":
-				user_db.update_one({"id": db_user["id"]}, {"$set": {
+				user_db.update_one({"id": id}, {"$set": {
 					"username": user.name,
 					"pfp": user.avatar,
 					"first_name": user.first_name,
