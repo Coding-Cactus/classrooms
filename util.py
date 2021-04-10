@@ -37,7 +37,7 @@ def randomstr(num):
 client = repltalk.Client()
 
 async def refresh_user_info():
-	for db_user in user_db.find():
+	for db_user in list(user_db.find()):
 		try:
 			id = db_user["id"]
 			user = await client.get_user_by_id(id)
