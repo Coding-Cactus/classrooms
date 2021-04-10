@@ -75,8 +75,7 @@ def landing():
 		users=user_db.find(),
 		allClassrooms=list(classroom_db.find()),
 		invites=user["classroomInvites"],
-		userClassrooms=list(classroom_db.find({"id": {"$in": user["classrooms"]}})),
-		teacher="teacher" in user["roles"]
+		userClassrooms=list(classroom_db.find({"id": {"$in": user["classrooms"]}}))
 	)
 
 
@@ -108,9 +107,6 @@ def make_class():
 	user_id = user.id
 	user_username = user.name
 	user_pfp = user.avatar
-	teacher = "teacher" in util.parse_roles(user.roles)
-
-	if not teacher: return abort(404)
 
 
 	if len(name.replace(" ", "")) == 0 or not name:
@@ -276,9 +272,8 @@ def clone():
 	user_id = user.id
 	user_username = user.name
 	user_pfp = user.avatar
-	teacher = "teacher" in util.parse_roles(user.roles)
 
-	if not teacher or not clone_class_id: return abort(404)
+	if clone_class_id: return abort(404)
 
 	if len(name.replace(" ", "")) == 0 or not name:
 		return "Invalid Name"
@@ -654,9 +649,6 @@ def inviteteacher():
 	
 	if user_id == teacher_id:
 		return "You can't invite yourself"
-
-	if "teacher" not in teacher["roles"]:
-		return "User is not a teacher"
 
 	if int(class_id) in [i["class_id"] for i in teacher["classroomInvites"]]:
 		return "User has already been invited"

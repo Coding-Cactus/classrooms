@@ -7,12 +7,10 @@
 
 
 {% block main %}
-{% if teacher %}
 	<h2>Create a Classroom</h2>
 	<button id="make-class">Create</button>
 	<div id="make-class-popup"></div>
 	<script src="/static/make_class.js"></script>
-{% endif %}
 
 <h2>Join a Classroom</h2>
 <form method="POST" id="join-class-form" action="/join">

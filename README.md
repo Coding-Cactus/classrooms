@@ -7,9 +7,7 @@ This is a replacement for repl.it's classrooms feature now that it has been shut
 
 ## Creating a Classroom
 
-First you will need to be a teacher on repl.it. You can do this by going to the [account page](https://repl.it/account) and scrolling down to the roles section and selecting the teacher role - if you do this after making an account it may take a while to update in this database, so is recommended that you make sure you have this role prior to your first login.
-
-Next on the [landing page](https://classrooms.codingcactus.repl.co) click the `Create` button towards the top of the page. This will allow you to then input the name, language, description, and icon for the classroom.
+On the [landing page](https://classrooms.codingcactus.repl.co) click the `Create` button towards the top of the page. This will allow you to then input the name, language, description, and icon for the classroom.
 
 
 ## Editing a Classroom
