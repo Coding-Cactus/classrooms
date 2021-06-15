@@ -504,7 +504,6 @@ def invite(inviteLink):
 		type = link_doc["type"]
 		if user_id not in classroom["teachers"] and user_id not in classroom["students"]:
 			classroom_db.update_one({"id": class_id}, {"$addToSet": {f"{type}s": user_id}})
-			print(user_db.update_one({"id": user_id}, {"$addToSet": {"classrooms": class_id}}))
 			if type == "student":
 				for assignment in assignment_db.find({"id": {"$in": classroom["assignments"]}}):
 					submissions = assignment["submissions"]
@@ -1071,7 +1070,7 @@ def resubmit():
 	classroom = classroom_db.find_one({"id": int(class_id)})
 	assignment = assignment_db.find_one({"id": int(assignment_id)})
 
-	if classroom == None or user_id not in classroom["students"] or int(assignment_id) not in classroom["assignments"] or assignment["submissions"][user_id]["status"] != "returned":
+	if classroom == None or user_id not in classroom["students"] or int(assignment_id) not in classroom["assignments"] or assignment["submissions"][str(user_id)]["status"] != "returned":
 		return abort(404)
 
 	submissions = assignment["submissions"]

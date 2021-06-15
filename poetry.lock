@@ -180,7 +180,7 @@ description = "Allows you to do various things with the kind of unofficial Repl.
 name = "repltalk"
 optional = false
 python-versions = "*"
-version = "0.8.17"
+version = "1.0.0"
 
 [package.dependencies]
 aiohttp = "*"
@@ -257,7 +257,7 @@ idna = ">=2.0"
 multidict = ">=4.0"
 
 [metadata]
-content-hash = "c2b88f2546419958ac717a3bd95e924cd17079dca9d29439d8b5d2050c417777"
+content-hash = "17f874cd7819fc95b38e90263e9b536c7a78926f5e34b45ca22d6855471fe28d"
 python-versions = "^3.8"
 
 [metadata.files]
@@ -503,8 +503,8 @@ pymongo = [
     {file = "pymongo-3.11.3.tar.gz", hash = "sha256:db5098587f58fbf8582d9bda2462762b367207246d3e19623782fb449c3c5fcc"},
 ]
 repltalk = [
-    {file = "repltalk-0.8.17-py3-none-any.whl", hash = "sha256:2c3e2619c273003385538a3eb4a43f692b9d495f70c132c9cf3b804417073f75"},
-    {file = "repltalk-0.8.17.tar.gz", hash = "sha256:8f29c72e665ce0f613297574786b4e59eb9e8914756bf69a4a91415aa9e89711"},
+    {file = "repltalk-1.0.0-py3-none-any.whl", hash = "sha256:10d6db46fb4351c5126cf14e814406f07793b8247d1ac2081723bc60c3a8d751"},
+    {file = "repltalk-1.0.0.tar.gz", hash = "sha256:d4e87aa57bc75a729c8b08c1b86d0bad855e4004053cba69123bf347dbc00975"},
 ]
 requests = [
     {file = "requests-2.25.1-py2.py3-none-any.whl", hash = "sha256:c210084e36a42ae6b9219e00e48287def368a26d03a048ddad7bfee44f75871e"},
