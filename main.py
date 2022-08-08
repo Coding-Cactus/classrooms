@@ -18,7 +18,6 @@ from flask import request
 from flask import redirect
 from flask import render_template
 
-
 client = repltalk.Client()
 
 myclient = MongoClient(os.getenv("mongouri"))
